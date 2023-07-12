@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+
+'''
+Author: Erin Young
+
+Description:
+
+This script will find the coverage for each amplicon in a bedfile and then graph it.
+
+EXAMPLE:
+aci -b input.bam -d amplicon.bed
+'''
+
+# trying to keep dependencies really low
+import argparse
+import subprocess
+from os.path import exists
+
+version = '0.0.20230715'
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-b', '--bam',  required= True, type=str, help='(required) input bam file')
+parser.add_argument('-d', '--bed',  required= True, type=str, help='(required) amplicon bedfile')
+parser.add_argument('-s', '--single', action='store_true', help='flag that specifies that reads are single-end in bam file')
+parser.add_argument('-o', '--out',  type=str, help='prefix for files', default='aci')
+parser.add_argument('-c', '--cpus', type=int, help="specifies number of cpus used",       default=1)
+parser.add_argument('-v', '--version',        help='print version and exit', action='version', version='%(prog)s ' + version)
+args   = parser.parse_args()
+
+subprocess.call("echo Hi")
+
+if exists(args.bam):
+    print("bam exists")
+
+if exists(args.bed):
+    print("bed exists")
+
