@@ -24,11 +24,13 @@ import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 
-# import time ### for testing
+import time ## for testing
 # about 30 seconds per artic V3 primer on SRR13957125
 # $ samtools coverage SRR13957125.sorted.bam
 # #rname      startpos endpos numreads covbases coverage meandepth meanbaseq meanmapq
 # MN908947.3  1        29903  1141595  29827    99.7458  5350.27   37.3      60
+# 15000 - 16500
+
 
 script_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
 
@@ -40,66 +42,86 @@ parser.add_argument('-b', '--bam', nargs = '+', required= True, type=str, help='
 parser.add_argument('-d', '--bed', required = True, type = str, help ='(required) amplicon bedfile')
 parser.add_argument('-s', '--single', action='store_true', help ='flag that specifies that reads are single-end in bam file')
 parser.add_argument('-o', '--out', type=str, help='directory for results', default='aci')
-parser.add_argument('-t', '--threads', type=int, help='specifies number of threads to use', default=1)
+parser.add_argument('-t', '--threads', type=int, help='specifies number of threads to use', default=4)
 parser.add_argument('-v', '--version', help='print version and exit', action='version', version='%(prog)s ' + version)
 args      = parser.parse_args()
 
 # the function that reduces the bam file to the region in question and then gets coverage
-def amplicon_depth(df,bam,region,single):
+def amplicon_depth(df, bam, region, single):
     # start_time = time.time() ## for testing
+    ref        = region.split(':')[0]
+    start      = int(region.split(':')[1])
+    end        = int(region.split(':')[2])
+    name       = region.split(':')[3]
+    file_name  = os.path.basename(bam)
 
-    ref   = region.split(':')[0]
-    start = int(region.split(':')[1])
-    end   = int(region.split(':')[2])
-    name  = region.split(':')[3]
-    
-    bed1  = args.out + '/tmp.' + bam  + '_'   + name + '.bed'
-    bam0  = args.out + '/tmp.' + name + '.0.' + bam
-    bam1  = args.out + '/tmp.' + name + '.1.' + bam
-    bam2  = args.out + '/tmp.' + name + '.2.' + bam
-    bam3  = args.out + '/tmp.' + name + '.3.' + bam
-    bam4  = args.out + '/tmp.' + name + '.4.' + bam
-    
+    # print('For ' + bam + ' region ' + region + ' checkpoint 1: ' + str(time.time() - start_time)) ## for testing
+    bed1 = args.out + '/tmp.' + name + '.' + file_name + '.bed'
+    bam0 = args.out + '/tmp.' + name + '.0.' + file_name
+    bam1 = args.out + '/tmp.' + name + '.1.' + file_name
+    bam2 = args.out + '/tmp.' + name + '.2.' + file_name
+    bam3 = args.out + '/tmp.' + name + '.3.' + file_name
+    bam4 = args.out + '/tmp.' + name + '.4.' + file_name
+
     if start <= 1:
-        with open(bed1,  mode='wt') as file:
-            file.write( ref + '\t' + str(end + 1) + '\t' + '5000000' )
+        # print('For ' + bam + ' region ' + region + ' checkpoint 2: ' + str(time.time() - start_time)) ## for testing
+        with open(bed1, mode='wt') as file:
+            file.write(ref + '\t' + str(end + 1) + '\t5000000\n')
     else:
-        with open(bed1,  mode='wt') as file:
-            file.write( ref + '\t' + str('0') + '\t' + str(start - 1) + '\n' + ref + '\t' + str(end + 1) + '\t' + '5000000' )
-    
-    if (single):
+        # print('For ' + bam + ' region ' + region + ' checkpoint 3: ' + str(time.time() - start_time)) ## for testing
+        with open(bed1, mode='wt') as file:
+            file.write(ref + '\t' + str('0') + '\t' + str(start - 1) + '\n' + ref + '\t' + str(end + 1) + '\t5000000\n')
+
+    # print('For ' + bam + ' region ' + region + ' checkpoint 4: ' + str(time.time() - start_time)) ## for testing
+    if single:
         paired_flag = ''
     else:
         paired_flag = '-f2 '
 
     # running samtools
+    # print('For ' + bam + ' region ' + region + ' checkpoint 5: ' + str(time.time() - start_time)) ## for testing
     os.system(samtools + ' sort -o ' + bam0 + " " + bam)
-    os.system(samtools + ' index ' + bam0)
-    os.system(samtools + ' view -bh ' + paired_flag + bam0 + ' ' + ref + ':' + str(start) + '-' + str(end) + ' -o ' + bam1 )
-    os.system(samtools + ' index ' + bam1)
-    os.system(samtools + ' view -bh ' + bam1 + ' -U ' + bam2 + ' -o ' + bam3 + ' -L ' + bed1 )
-    os.system(samtools + ' index ' + bam2)
-    os.system(samtools + ' view -bh ' + paired_flag + bam2 + ' ' + ref + ':' + str(start) + '-' + str(end) + ' -o ' + bam4 )
-    os.system(samtools + ' index ' + bam4)
+    # print('For ' + bam + ' region ' + region + ' checkpoint 6: ' + str(time.time() - start_time)) ## for testing
+    if os.path.exists(bam0):
+        os.system(samtools + ' index ' + bam0)
+        os.system(samtools + ' view -bh ' + paired_flag + bam0 + ' ' + ref + ':' + str(start) + '-' + str(end) + ' -o ' + bam1 )
+        os.remove(bam0)
+        os.remove(bam0 + '.bai')
     
-    stdout = subprocess.check_output(samtools + ' coverage ' + bam4 + ' -r ' + ref + ':' + str(start) + '-' + str(end) + "| tail -n 1 | awk '{print $7}'",  shell=True).strip()
-    cov = float(stdout)
+    # print('For ' + bam + ' region ' + region + ' checkpoint 7: ' + str(time.time() - start_time)) ## for testing
+    if os.path.exists(bam1):
+        os.system(samtools + ' index ' + bam1)
+        os.system(samtools + ' view -bh ' + bam1 + ' -U ' + bam2 + ' -o ' + bam3 + ' -L ' + bed1 )
+        os.remove(bam1)
+        os.remove(bam1 + '.bai')
     
-    # removing tmp files
     os.remove(bed1)
-    os.remove(bam0)
-    os.remove(bam1)
-    os.remove(bam2)
-    os.remove(bam3)
-    os.remove(bam4)
-    os.remove(bam0 + '.bai')
-    os.remove(bam1 + '.bai')
-    os.remove(bam2 + '.bai')
-    os.remove(bam4 + '.bai')
-    
+
+    # print('For ' + bam + ' region ' + region + ' checkpoint 8: ' + str(time.time() - start_time)) ## for testing
+    if os.path.exists(bam2):
+        os.system(samtools + ' index ' + bam2)
+        os.system(samtools + ' view -bh ' + paired_flag + bam2 + ' ' + ref + ':' + str(start) + '-' + str(end) + ' -o ' + bam4 )
+        os.remove(bam2)
+        os.remove(bam2 + '.bai')
+        os.remove(bam3)
+        
+    # print('For ' + bam + ' region ' + region + ' checkpoint 9: ' + str(time.time() - start_time)) ## for testing
+    if os.path.exists(bam4):
+        os.system(samtools + ' index ' + bam4)
+        stdout = subprocess.run([samtools, 'coverage', '--no-header', bam4, '-r', ref + ':' + str(start) + '-' + str(end)], capture_output=True, text=True, check=True)
+
+        # print('For ' + bam + ' region ' + region + ' checkpoint 10: ' + str(time.time() - start_time)) ## for testing
+        cov = float(stdout.stdout.strip().split()[6])
+        os.remove(bam4)
+        os.remove(bam4 + '.bai')  
+    else:
+        cov=0
+
+    # print('For ' + bam + ' region ' + region + ' checkpoint 11: ' + str(time.time() - start_time)) ## for testing    
     bamindex = df.index[df['bam'] == bam]
     df.loc[bamindex, [name]] = cov
-    # print('For ' + bam + ' and ' + region + ' it took ' + str(time.time() - start_time) + ' seconds' ) ## for testing
+
+    # print('For ' + bam + ' region ' + region + ' checkpoint fin: ' + str(time.time() - start_time)) ## for testing
 
 if not os.path.exists(args.bed):
     print('FATAL : bedfile ' + args.bed + ' does not exist. Exiting')
@@ -118,7 +140,7 @@ else:
 print("Input bed file :\t"    + str(args.bed))
 print("Input bam file(s) :\t" + ', '.join(args.bam))
 
-pool      = concurrent.futures.ThreadPoolExecutor(max_workers = args.threads)
+pool = concurrent.futures.ThreadPoolExecutor(max_workers=args.threads)
 df        = pd.DataFrame([])
 df['bam'] = args.bam
 regions   = []
@@ -132,10 +154,10 @@ with open(args.bed) as file:
         regions.append(ref + ':' + start + ':' + end + ':' + name)
 
 for input in list(itertools.product(args.bam,regions)):
-    if (args.single):
-        pool.submit(amplicon_depth, df, input[0], input[1], True)
-    else:
-        pool.submit(amplicon_depth, df, input[0], input[1], False)
+        if (args.single):
+            pool.submit(amplicon_depth,df, input[0], input[1], True)
+        else:
+            pool.submit(amplicon_depth,df, input[0], input[1], False)
 
 pool.shutdown(wait=True)
 
@@ -155,7 +177,6 @@ boxplot.set_ylabel('meandepth')
 boxplot.set_xlabel('amplicon name')
 boxplot.figure.savefig(args.out + '/amplicon_depth.png', bbox_inches='tight')
 
-
 # now getting depth information for comparison
 print(' '.join(args.bam))
 os.system(samtools + " depth --threads " + str(args.threads) + ' ' + ' '.join(args.bam) + " > " + args.out + "/depth.txt")
@@ -165,19 +186,21 @@ df1.columns = ['ref', 'pos'] + args.bam
 df1['group'] = (df1['pos'] / 500).apply(np.floor)
 df1 = df1.drop(['ref', 'pos'], axis=1)
 df2 = df1.groupby(['group']).mean().reset_index()
-df2['pos'] = int(df2['group']) * 500 - 499 + "-" + int(df2['group']) * 500
+df2['pos'] = (df2['group'] * 500).astype('str') + "-" + (df2['group'] * 500 + 499).astype('str')
 
 # remove depth file
 os.remove(args.out + "/depth.txt")
 
 # writing results to a file
 df2.to_csv(args.out + '/genome_depth.csv', index=False)
+groups=df2['pos'].to_list()
 
 # getting rid of column with all the group names
 df2 = df2.drop(['group', 'pos'], axis=1)
 # switching columns (bam files) for rows (positions)
 df2 = df2.transpose()
-
+#df2.columns=groups
+print(df2)
 boxplot2 = df2.boxplot(fontsize=5, 
                      rot=90, 
                      figsize=(15,8), 
