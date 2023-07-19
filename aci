@@ -7,31 +7,183 @@ Description:
 
 This script will find the coverage for each amplicon in a bedfile and then graph it.
 
+Tis masqurading as a real python program.
+
 EXAMPLE:
 aci -b input.bam -d amplicon.bed
 '''
 
 # trying to keep dependencies really low
 import argparse
+import os
+import sys
 import subprocess
-from os.path import exists
+import concurrent.futures
+import pandas as pd
+import itertools
+import numpy as np
+import matplotlib.pyplot as plt
+
+# import time ### for testing
+# about 30 seconds per artic V3 primer on SRR13957125
+# $ samtools coverage SRR13957125.sorted.bam
+# #rname      startpos endpos numreads covbases coverage meandepth meanbaseq meanmapq
+# MN908947.3  1        29903  1141595  29827    99.7458  5350.27   37.3      60
+
+script_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 version = '0.0.20230715'
+samtools = script_directory + '/bin/samtools/samtools'
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-b', '--bam',  required= True, type=str, help='(required) input bam file')
-parser.add_argument('-d', '--bed',  required= True, type=str, help='(required) amplicon bedfile')
-parser.add_argument('-s', '--single', action='store_true', help='flag that specifies that reads are single-end in bam file')
-parser.add_argument('-o', '--out',  type=str, help='prefix for files', default='aci')
-parser.add_argument('-c', '--cpus', type=int, help="specifies number of cpus used",       default=1)
-parser.add_argument('-v', '--version',        help='print version and exit', action='version', version='%(prog)s ' + version)
-args   = parser.parse_args()
+parser.add_argument('-b', '--bam', nargs = '+', required= True, type=str, help='(required) input bam file')
+parser.add_argument('-d', '--bed', required = True, type = str, help ='(required) amplicon bedfile')
+parser.add_argument('-s', '--single', action='store_true', help ='flag that specifies that reads are single-end in bam file')
+parser.add_argument('-o', '--out', type=str, help='directory for results', default='aci')
+parser.add_argument('-t', '--threads', type=int, help='specifies number of threads to use', default=1)
+parser.add_argument('-v', '--version', help='print version and exit', action='version', version='%(prog)s ' + version)
+args      = parser.parse_args()
 
-subprocess.call("echo Hi")
+# the function that reduces the bam file to the region in question and then gets coverage
+def amplicon_depth(df,bam,region,single):
+    # start_time = time.time() ## for testing
 
-if exists(args.bam):
-    print("bam exists")
+    ref   = region.split(':')[0]
+    start = int(region.split(':')[1])
+    end   = int(region.split(':')[2])
+    name  = region.split(':')[3]
+    
+    bed1  = args.out + '/tmp.' + bam  + '_'   + name + '.bed'
+    bam0  = args.out + '/tmp.' + name + '.0.' + bam
+    bam1  = args.out + '/tmp.' + name + '.1.' + bam
+    bam2  = args.out + '/tmp.' + name + '.2.' + bam
+    bam3  = args.out + '/tmp.' + name + '.3.' + bam
+    bam4  = args.out + '/tmp.' + name + '.4.' + bam
+    
+    if start <= 1:
+        with open(bed1,  mode='wt') as file:
+            file.write( ref + '\t' + str(end + 1) + '\t' + '5000000' )
+    else:
+        with open(bed1,  mode='wt') as file:
+            file.write( ref + '\t' + str('0') + '\t' + str(start - 1) + '\n' + ref + '\t' + str(end + 1) + '\t' + '5000000' )
+    
+    if (single):
+        paired_flag = ''
+    else:
+        paired_flag = '-f2 '
 
-if exists(args.bed):
-    print("bed exists")
+    # running samtools
+    os.system(samtools + ' sort -o ' + bam0 + " " + bam)
+    os.system(samtools + ' index ' + bam0)
+    os.system(samtools + ' view -bh ' + paired_flag + bam0 + ' ' + ref + ':' + str(start) + '-' + str(end) + ' -o ' + bam1 )
+    os.system(samtools + ' index ' + bam1)
+    os.system(samtools + ' view -bh ' + bam1 + ' -U ' + bam2 + ' -o ' + bam3 + ' -L ' + bed1 )
+    os.system(samtools + ' index ' + bam2)
+    os.system(samtools + ' view -bh ' + paired_flag + bam2 + ' ' + ref + ':' + str(start) + '-' + str(end) + ' -o ' + bam4 )
+    os.system(samtools + ' index ' + bam4)
+    
+    stdout = subprocess.check_output(samtools + ' coverage ' + bam4 + ' -r ' + ref + ':' + str(start) + '-' + str(end) + "| tail -n 1 | awk '{print $7}'",  shell=True).strip()
+    cov = float(stdout)
+    
+    # removing tmp files
+    os.remove(bed1)
+    os.remove(bam0)
+    os.remove(bam1)
+    os.remove(bam2)
+    os.remove(bam3)
+    os.remove(bam4)
+    os.remove(bam0 + '.bai')
+    os.remove(bam1 + '.bai')
+    os.remove(bam2 + '.bai')
+    os.remove(bam4 + '.bai')
+    
+    bamindex = df.index[df['bam'] == bam]
+    df.loc[bamindex, [name]] = cov
+    # print('For ' + bam + ' and ' + region + ' it took ' + str(time.time() - start_time) + ' seconds' ) ## for testing
 
+if not os.path.exists(args.bed):
+    print('FATAL : bedfile ' + args.bed + ' does not exist. Exiting')
+    exit(1)
+
+if not os.path.exists(args.out):
+    os.mkdir(args.out)
+
+print("ACI version :\t\t"     + str(version))
+print("Number of threads :\t" + str(args.threads))
+print("Final directory :\t"   + str(args.out))
+if args.single:
+    print("Read type :\t\tSingle")
+else:
+    print("Read type :\t\tPaired")
+print("Input bed file :\t"    + str(args.bed))
+print("Input bam file(s) :\t" + ', '.join(args.bam))
+
+pool      = concurrent.futures.ThreadPoolExecutor(max_workers = args.threads)
+df        = pd.DataFrame([])
+df['bam'] = args.bam
+regions   = []
+
+with open(args.bed) as file:
+    for line in file:
+        ref=str(line.split('\t')[0])
+        start=str(int(line.split('\t')[1]))
+        end=str(int(line.split('\t')[2]))
+        name=str(line.split('\t')[3])
+        regions.append(ref + ':' + start + ':' + end + ':' + name)
+
+for input in list(itertools.product(args.bam,regions)):
+    if (args.single):
+        pool.submit(amplicon_depth, df, input[0], input[1], True)
+    else:
+        pool.submit(amplicon_depth, df, input[0], input[1], False)
+
+pool.shutdown(wait=True)
+
+# writing results to a file
+df.to_csv(args.out + '/amplicon_depth.csv', index=False)
+
+# getting rid of column with all the bam names
+df.drop('bam', axis=1, inplace=True)
+
+boxplot = df.boxplot(fontsize=5, 
+                     rot=90, 
+                     figsize=(15,8), 
+                     grid=False)
+boxplot.plot()
+plt.title('Primer Assessment')
+boxplot.set_ylabel('meandepth')
+boxplot.set_xlabel('amplicon name')
+boxplot.figure.savefig(args.out + '/amplicon_depth.png', bbox_inches='tight')
+
+
+# now getting depth information for comparison
+print(' '.join(args.bam))
+os.system(samtools + " depth --threads " + str(args.threads) + ' ' + ' '.join(args.bam) + " > " + args.out + "/depth.txt")
+
+df1 = pd.read_table(args.out + "/depth.txt", header= None, delimiter= "\t")
+df1.columns = ['ref', 'pos'] + args.bam
+df1['group'] = (df1['pos'] / 500).apply(np.floor)
+df1 = df1.drop(['ref', 'pos'], axis=1)
+df2 = df1.groupby(['group']).mean().reset_index()
+df2['pos'] = int(df2['group']) * 500 - 499 + "-" + int(df2['group']) * 500
+
+# remove depth file
+os.remove(args.out + "/depth.txt")
+
+# writing results to a file
+df2.to_csv(args.out + '/genome_depth.csv', index=False)
+
+# getting rid of column with all the group names
+df2 = df2.drop(['group', 'pos'], axis=1)
+# switching columns (bam files) for rows (positions)
+df2 = df2.transpose()
+
+boxplot2 = df2.boxplot(fontsize=5, 
+                     rot=90, 
+                     figsize=(15,8), 
+                     grid=False)
+boxplot2.plot()
+plt.title('Average depth across genome')
+boxplot2.set_ylabel('meandepth')
+boxplot2.set_xlabel('position')
+boxplot2.figure.savefig(args.out + '/genome_depth.png', bbox_inches='tight')
