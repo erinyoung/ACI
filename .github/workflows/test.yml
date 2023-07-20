@@ -17,7 +17,10 @@ jobs:
 
       - name: Checkout repo
         run: git checkout
-            
+        
+      - name: Initial tree
+        run: tree .
+        
       - name: Run ACI
         run: ./aci -b test/test.bam -d test/test.bed -o test
 
@@ -30,5 +33,5 @@ jobs:
       - name: Run ACI help
         run: ./aci -h
 
-      - name : Final file structure
+      - name : Final tree
         run: tree .
