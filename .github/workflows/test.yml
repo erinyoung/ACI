@@ -22,7 +22,7 @@ jobs:
         run: pwd && tree .
         
       - name: Samtools version
-        run: ls /home/runner/work/ACI/ACI/bin/samtools/samtools && /home/runner/work/ACI/ACI/bin/samtools/samtools version
+        run: ls -alh /home/runner/work/ACI/ACI/bin/samtools/samtools && /home/runner/work/ACI/ACI/bin/samtools/samtools version
         
       - name: Run ACI
         run: ./aci -b test/test.bam -d test/test.bed -o test
