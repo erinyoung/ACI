@@ -19,19 +19,19 @@ jobs:
         run: git checkout
             
       - name: Run ACI
-        run: aci -b test/test.bam -d test/test.bed
+        run: ./aci -b test/test.bam -d test/test.bed
 
       - name: Run ACI with out
-        run: aci -b test/test.bam -d test/test.bed -o test
+        run: ./aci -b test/test.bam -d test/test.bed -o test
 
       - name: Run ACI with single flag
-        run: aci -b test/test.bam -d test/test.bed -o test1 -s
+        run: ./aci -b test/test.bam -d test/test.bed -o test1 -s
 
       - name: Run ACI version
-        run: aci -v
+        run: ./aci -v
       
       - name: Run ACI help
-        run: aci -h
+        run: ./aci -h
 
       - name : Final file structure
         run: tree .
