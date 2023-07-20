@@ -1,0 +1,37 @@
+name: Test ACI
+
+on: [pull_request, workflow_dispatch]
+
+run-name: Test ACI
+
+jobs:
+
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Checkout repo
+        run: git checkout
+            
+      - name: Run ACI
+        run: aci -b test/test.bam -d test/test.bed
+
+      - name: Run ACI with out
+        run: aci -b test/test.bam -d test/test.bed -o test
+
+      - name: Run ACI with single flag
+        run: aci -b test/test.bam -d test/test.bed -o test1 -s
+
+      - name: Run ACI version
+        run: aci -v
+      
+      - name: Run ACI help
+        run: aci -h
+
+      - name : Final file structure
+        run: tree .
