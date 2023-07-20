@@ -19,9 +19,6 @@ jobs:
         run: git checkout
             
       - name: Run ACI
-        run: ./aci -b test/test.bam -d test/test.bed
-
-      - name: Run ACI with out
         run: ./aci -b test/test.bam -d test/test.bed -o test
 
       - name: Run ACI with single flag
