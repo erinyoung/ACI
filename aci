@@ -31,7 +31,6 @@ import time ## for testing
 # MN908947.3  1        29903  1141595  29827    99.7458  5350.27   37.3      60
 # 15000 - 16500
 
-
 script_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 version = '0.0.20230715'
@@ -140,6 +139,11 @@ else:
 print("Input bed file :\t"    + str(args.bed))
 print("Input bam file(s) :\t" + ', '.join(args.bam))
 
+##### ----- ----- ----- ----- ----- #####
+##### Part 1. Amplicon depths       #####
+##### ----- ----- ----- ----- ----- #####
+
+print("Getting depth for amplicons")
 pool = concurrent.futures.ThreadPoolExecutor(max_workers=args.threads)
 df        = pd.DataFrame([])
 df['bam'] = args.bam
@@ -167,46 +171,70 @@ df.to_csv(args.out + '/amplicon_depth.csv', index=False)
 # getting rid of column with all the bam names
 df.drop('bam', axis=1, inplace=True)
 
-boxplot = df.boxplot(fontsize=5, 
-                     rot=90, 
-                     figsize=(15,8), 
-                     grid=False)
+boxplot = df.boxplot(fontsize=5, rot=90, figsize=(15,8), grid=False)
 boxplot.plot()
 plt.title('Primer Assessment')
 boxplot.set_ylabel('meandepth')
 boxplot.set_xlabel('amplicon name')
 boxplot.figure.savefig(args.out + '/amplicon_depth.png', bbox_inches='tight')
+plt.close()
+
+print("Depth for amplicons is saved in " + args.out + '/amplicon_depth.csv')
+print("An boxplot of these depths is at " + args.out + '/amplicon_depth.png')
+
+##### ----- ----- ----- ----- ----- #####
+##### Part 2. Genome/bam depths     #####
+##### ----- ----- ----- ----- ----- #####
 
 # now getting depth information for comparison
-print(' '.join(args.bam))
 os.system(samtools + " depth --threads " + str(args.threads) + ' ' + ' '.join(args.bam) + " > " + args.out + "/depth.txt")
 
 df1 = pd.read_table(args.out + "/depth.txt", header= None, delimiter= "\t")
-df1.columns = ['ref', 'pos'] + args.bam
+
+# renaming columns (because there's no header)
+
+bam_names = []
+for bam in args.bam:
+    file_name  = os.path.basename(bam)
+    bam_names.append(file_name)
+
+df1.columns = ['ref', 'pos'] + bam_names
+
+# dividing positions into group for boxplot
 df1['group'] = (df1['pos'] / 500).apply(np.floor)
 df1 = df1.drop(['ref', 'pos'], axis=1)
+
+# getting a df for graphing
 df2 = df1.groupby(['group']).mean().reset_index()
-df2['pos'] = (df2['group'] * 500).astype('str') + "-" + (df2['group'] * 500 + 499).astype('str')
+df2['start'] = (df2['group'] * 500).astype(int)
+df2['end']   = (df2['group'] * 500 + 499).astype(int)
+df2['pos']   = df2['start'].astype('str') + "-" + df2['end'].astype('str')
 
 # remove depth file
 os.remove(args.out + "/depth.txt")
 
 # writing results to a file
 df2.to_csv(args.out + '/genome_depth.csv', index=False)
+
 groups=df2['pos'].to_list()
 
 # getting rid of column with all the group names
-df2 = df2.drop(['group', 'pos'], axis=1)
+df2 = df2.drop(['group', 'pos', 'start','end'], axis=1)
+
 # switching columns (bam files) for rows (positions)
 df2 = df2.transpose()
-#df2.columns=groups
-print(df2)
-boxplot2 = df2.boxplot(fontsize=5, 
-                     rot=90, 
-                     figsize=(15,8), 
-                     grid=False)
+df2.columns=groups
+
+# creating the boxplot
+boxplot2 = df2.boxplot(fontsize=5, rot=90, figsize=(15,8), grid=False)
 boxplot2.plot()
 plt.title('Average depth across genome')
 boxplot2.set_ylabel('meandepth')
-boxplot2.set_xlabel('position')
+boxplot2.set_xlabel('position (start-end)')
 boxplot2.figure.savefig(args.out + '/genome_depth.png', bbox_inches='tight')
+plt.close()
+
+print("Depth for the genome from the bam file is saved in " + args.out + '/genome_depth.csv')
+print("An boxplot of these depths is at " + args.out + '/genome_depth.png')
+
+print("ACI is complete! (And I hope all your primers are behaving as expected!)")
