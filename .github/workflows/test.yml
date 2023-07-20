@@ -19,7 +19,7 @@ jobs:
         run: git checkout
         
       - name: Initial tree
-        run: pwd && tree .
+        run: pwd && tree . && ls /home/runner/work/ACI/ACI/bin/samtools/samtools
         
       - name: Run ACI
         run: ./aci -b test/test.bam -d test/test.bed -o test
