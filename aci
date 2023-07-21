@@ -34,7 +34,7 @@ import time ## for testing
 script_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 version = '0.0.20230715'
-samtools = script_directory + '/bin/samtools/samtools'
+samtools = script_directory + '/bin/samtools'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-b', '--bam', nargs = '+', required= True, type=str, help='(required) input bam file')
