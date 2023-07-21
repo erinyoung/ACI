@@ -82,7 +82,7 @@ def amplicon_depth(df, bam, region, single):
         if single:
             pysam.view('-bh', '-o', bam1, bam0, subregion, catch_stdout=False)    
         else:
-            pysam.view('-bh', '-f2, '-o', bam1, bam0, subregion, catch_stdout=False)    
+            pysam.view('-bh', '-f2', '-o', bam1, bam0, subregion, catch_stdout=False)    
         os.remove(bam0)
         os.remove(bam0 + '.bai')
     
@@ -101,7 +101,7 @@ def amplicon_depth(df, bam, region, single):
         if single:
             pysam.view('-bh', '-o', bam1, bam0, subregion, catch_stdout=False)    
         else:
-            pysam.view('-bh', '-f2, '-o', bam1, bam0, subregion, catch_stdout=False)
+            pysam.view('-bh', '-f2', '-o', bam1, bam0, subregion, catch_stdout=False)
         os.remove(bam2)
         os.remove(bam2 + '.bai')
         os.remove(bam3)
