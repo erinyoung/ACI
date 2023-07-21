@@ -24,6 +24,9 @@ aci --bam input.bam --bed amplicon.bed --out out
 
 Final files are out/amplicon_depth.csv and out/amplicon_depth.png
 
+Expected run time:
+About 30 seconds per amplicon when using SRR13957125 (SARS-CoV-2 with ~30 KB genome size and 5,350.27 mean depth) and the artic V3 primers. Larger genomes, more coverage, and larger amplicons increase the computation time. Use -t or --threads to take advantage of determining the coverage of amplicons in parallel.
+
 ![alt text](assets/aci.png)
 
 There are not currently options to change the look of the final image file. Instead, the amplicon_depth.csv file contains all the values in a '.csv' format that can be read into R, python, excel, or another tool for visualization.
