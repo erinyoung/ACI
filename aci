@@ -71,20 +71,18 @@ def amplicon_depth(df, bam, region, single):
             file.write(ref + '\t' + str('0') + '\t' + str(start - 1) + '\n' + ref + '\t' + str(end + 1) + '\t5000000\n')
 
     # print('For ' + bam + ' region ' + region + ' checkpoint 4: ' + str(time.time() - start_time)) ## for testing
-    if single:
-        paired_flag = ''
-    else:
-        paired_flag = '-f2'
 
     # running samtools via pysam
     # print('For ' + bam + ' region ' + region + ' checkpoint 5: ' + str(time.time() - start_time)) ## for testing
     pysam.sort('-o', bam0, bam)
-
    
     if os.path.exists(bam0):
         # print('For ' + bam + ' region ' + region + ' checkpoint 6: ' + str(time.time() - start_time)) ## for testing
         pysam.index(bam0)
-        pysam.view('-bh', paired_flag, '-o', bam1, bam0, subregion, catch_stdout=False)    
+        if single:
+            pysam.view('-bh', '-o', bam1, bam0, subregion, catch_stdout=False)    
+        else:
+            pysam.view('-bh', '-f2, '-o', bam1, bam0, subregion, catch_stdout=False)    
         os.remove(bam0)
         os.remove(bam0 + '.bai')
     
@@ -100,7 +98,10 @@ def amplicon_depth(df, bam, region, single):
     if os.path.exists(bam2):
         # print('For ' + bam + ' region ' + region + ' checkpoint 8: ' + str(time.time() - start_time)) ## for testing
         pysam.index(bam2)
-        pysam.view('-bh', paired_flag, bam2, subregion, '-o', bam4, catch_stdout=False)
+        if single:
+            pysam.view('-bh', '-o', bam1, bam0, subregion, catch_stdout=False)    
+        else:
+            pysam.view('-bh', '-f2, '-o', bam1, bam0, subregion, catch_stdout=False)
         os.remove(bam2)
         os.remove(bam2 + '.bai')
         os.remove(bam3)
