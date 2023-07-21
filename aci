@@ -13,16 +13,17 @@ EXAMPLE:
 aci -b input.bam -d amplicon.bed
 '''
 
-# trying to keep dependencies really low
+# I tried to keep dependencies down...
 import argparse
-import os
-import sys
-import subprocess
 import concurrent.futures
-import pandas as pd
 import itertools
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import os
+import pandas as pd
+import pysam
+import subprocess
+import sys
 
 import time ## for testing
 # about 30 seconds per artic V3 primer on SRR13957125
@@ -31,10 +32,7 @@ import time ## for testing
 # MN908947.3  1        29903  1141595  29827    99.7458  5350.27   37.3      60
 # 15000 - 16500
 
-script_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
-
 version = '0.0.20230715'
-samtools = script_directory + '/bin/samtools'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-b', '--bam', nargs = '+', required= True, type=str, help='(required) input bam file')
@@ -47,11 +45,12 @@ args      = parser.parse_args()
 
 # the function that reduces the bam file to the region in question and then gets coverage
 def amplicon_depth(df, bam, region, single):
-    # start_time = time.time() ## for testing
+    start_time = time.time() ## for testing
     ref        = region.split(':')[0]
     start      = int(region.split(':')[1])
     end        = int(region.split(':')[2])
     name       = region.split(':')[3]
+    subregion  = ref + ':' + str(start) + '-' + str(end)
     file_name  = os.path.basename(bam)
 
     # print('For ' + bam + ' region ' + region + ' checkpoint 1: ' + str(time.time() - start_time)) ## for testing
@@ -75,42 +74,42 @@ def amplicon_depth(df, bam, region, single):
     if single:
         paired_flag = ''
     else:
-        paired_flag = '-f2 '
+        paired_flag = '-f2'
 
-    # running samtools
+    # running samtools via pysam
     # print('For ' + bam + ' region ' + region + ' checkpoint 5: ' + str(time.time() - start_time)) ## for testing
-    os.system(samtools + ' sort -o ' + bam0 + " " + bam)
-    # print('For ' + bam + ' region ' + region + ' checkpoint 6: ' + str(time.time() - start_time)) ## for testing
+    pysam.sort('-o', bam0, bam)
+
+   
     if os.path.exists(bam0):
-        os.system(samtools + ' index ' + bam0)
-        os.system(samtools + ' view -bh ' + paired_flag + bam0 + ' ' + ref + ':' + str(start) + '-' + str(end) + ' -o ' + bam1 )
+        # print('For ' + bam + ' region ' + region + ' checkpoint 6: ' + str(time.time() - start_time)) ## for testing
+        pysam.index(bam0)
+        pysam.view('-bh', paired_flag, '-o', bam1, bam0, subregion, catch_stdout=False)    
         os.remove(bam0)
         os.remove(bam0 + '.bai')
     
-    # print('For ' + bam + ' region ' + region + ' checkpoint 7: ' + str(time.time() - start_time)) ## for testing
     if os.path.exists(bam1):
-        os.system(samtools + ' index ' + bam1)
-        os.system(samtools + ' view -bh ' + bam1 + ' -U ' + bam2 + ' -o ' + bam3 + ' -L ' + bed1 )
+        # print('For ' + bam + ' region ' + region + ' checkpoint 7: ' + str(time.time() - start_time)) ## for testing
+        pysam.index(bam1)
+        pysam.view('-bh', bam1, '-U', bam2, '-o', bam3, '-L', bed1, catch_stdout=False)
         os.remove(bam1)
         os.remove(bam1 + '.bai')
     
     os.remove(bed1)
 
-    # print('For ' + bam + ' region ' + region + ' checkpoint 8: ' + str(time.time() - start_time)) ## for testing
     if os.path.exists(bam2):
-        os.system(samtools + ' index ' + bam2)
-        os.system(samtools + ' view -bh ' + paired_flag + bam2 + ' ' + ref + ':' + str(start) + '-' + str(end) + ' -o ' + bam4 )
+        # print('For ' + bam + ' region ' + region + ' checkpoint 8: ' + str(time.time() - start_time)) ## for testing
+        pysam.index(bam2)
+        pysam.view('-bh', paired_flag, bam2, subregion, '-o', bam4, catch_stdout=False)
         os.remove(bam2)
         os.remove(bam2 + '.bai')
         os.remove(bam3)
         
-    # print('For ' + bam + ' region ' + region + ' checkpoint 9: ' + str(time.time() - start_time)) ## for testing
     if os.path.exists(bam4):
-        os.system(samtools + ' index ' + bam4)
-        stdout = subprocess.run([samtools, 'coverage', '--no-header', bam4, '-r', ref + ':' + str(start) + '-' + str(end)], capture_output=True, text=True, check=True)
-
+        # print('For ' + bam + ' region ' + region + ' checkpoint 9: ' + str(time.time() - start_time)) ## for testing
+        pysam.index(bam4)
+        cov=float(pysam.coverage('--no-header', bam4, '-r', subregion).split()[6]) 
         # print('For ' + bam + ' region ' + region + ' checkpoint 10: ' + str(time.time() - start_time)) ## for testing
-        cov = float(stdout.stdout.strip().split()[6])
         os.remove(bam4)
         os.remove(bam4 + '.bai')  
     else:
@@ -121,6 +120,7 @@ def amplicon_depth(df, bam, region, single):
     df.loc[bamindex, [name]] = cov
 
     # print('For ' + bam + ' region ' + region + ' checkpoint fin: ' + str(time.time() - start_time)) ## for testing
+
 
 if not os.path.exists(args.bed):
     print('FATAL : bedfile ' + args.bed + ' does not exist. Exiting')
@@ -159,9 +159,11 @@ with open(args.bed) as file:
 
 for input in list(itertools.product(args.bam,regions)):
         if (args.single):
-            pool.submit(amplicon_depth,df, input[0], input[1], True)
+            # pool.submit(amplicon_depth,df, input[0], input[1], True)
+            amplicon_depth(df,input[0],input[1],True)
         else:
-            pool.submit(amplicon_depth,df, input[0], input[1], False)
+            # pool.submit(amplicon_depth,df, input[0], input[1], False)
+            amplicon_depth(df,input[0],input[1],False)
 
 pool.shutdown(wait=True)
 
@@ -182,59 +184,70 @@ plt.close()
 print("Depth for amplicons is saved in " + args.out + '/amplicon_depth.csv')
 print("An boxplot of these depths is at " + args.out + '/amplicon_depth.png')
 
-##### ----- ----- ----- ----- ----- #####
-##### Part 2. Genome/bam depths     #####
-##### ----- ----- ----- ----- ----- #####
+# ##### ----- ----- ----- ----- ----- #####
+# ##### Part 2. Genome/bam depths     #####
+# ##### ----- ----- ----- ----- ----- #####
+# def genome_depth(df1, bam):
+#     file_name = os.path.basename(bam)
 
-# now getting depth information for comparison
-os.system(samtools + " depth --threads " + str(args.threads) + ' ' + ' '.join(args.bam) + " > " + args.out + "/depth.txt")
+#     df2 = pd.DataFrame([x.split('\t') for x in pysam.depth(bam).split('\n')])
+#     df2.columns = ['ref', 'pos', 'cov']
 
-df1 = pd.read_table(args.out + "/depth.txt", header= None, delimiter= "\t")
+#     df3 = pd.DataFrame(columns = ['bam'] + df2['pos'].to_list())
+#     df3.loc[1] = [bam] + df2['cov'].to_list()
 
-# renaming columns (because there's no header)
+#     df1 = pd.merge(df1, df3, how = 'outer')
+#     print("df3")
+#     print(df3)
+#     print("df1")
+#     print(df1)
 
-bam_names = []
-for bam in args.bam:
-    file_name  = os.path.basename(bam)
-    bam_names.append(file_name)
+# # now getting depth information for comparison
+# df1        = pd.DataFrame([])
+# df1['bam'] = args.bam
 
-df1.columns = ['ref', 'pos'] + bam_names
+# for bam in args.bam:
+#     genome_depth(df1, bam)
 
-# dividing positions into group for boxplot
-df1['group'] = (df1['pos'] / 500).apply(np.floor)
-df1 = df1.drop(['ref', 'pos'], axis=1)
+# print("Out of the function")
+# print(df1)
+# exit()
 
-# getting a df for graphing
-df2 = df1.groupby(['group']).mean().reset_index()
-df2['start'] = (df2['group'] * 500).astype(int)
-df2['end']   = (df2['group'] * 500 + 499).astype(int)
-df2['pos']   = df2['start'].astype('str') + "-" + df2['end'].astype('str')
+# # dividing positions into group for boxplot
+# df1['group'] = (df1['pos'] / 500).apply(np.floor)
+# df1 = df1.drop(['ref', 'pos'], axis=1)
 
-# remove depth file
-os.remove(args.out + "/depth.txt")
+# # getting a df for graphing
+# df2 = df1.groupby(['group']).mean().reset_index()
+# df2['start'] = (df2['group'] * 500).astype(int)
+# df2['end']   = (df2['group'] * 500 + 499).astype(int)
+# df2['pos']   = df2['start'].astype('str') + "-" + df2['end'].astype('str')
 
-# writing results to a file
-df2.to_csv(args.out + '/genome_depth.csv', index=False)
+# # remove depth file
+# os.remove(args.out + "/depth.txt")
 
-groups=df2['pos'].to_list()
+# # writing results to a file
+# df2.to_csv(args.out + '/genome_depth.csv', index=False)
 
-# getting rid of column with all the group names
-df2 = df2.drop(['group', 'pos', 'start','end'], axis=1)
+# groups=df2['pos'].to_list()
 
-# switching columns (bam files) for rows (positions)
-df2 = df2.transpose()
-df2.columns=groups
+# # getting rid of column with all the group names
+# df2 = df2.drop(['group', 'pos', 'start','end'], axis=1)
 
-# creating the boxplot
-boxplot2 = df2.boxplot(fontsize=5, rot=90, figsize=(15,8), grid=False)
-boxplot2.plot()
-plt.title('Average depth across genome')
-boxplot2.set_ylabel('meandepth')
-boxplot2.set_xlabel('position (start-end)')
-boxplot2.figure.savefig(args.out + '/genome_depth.png', bbox_inches='tight')
-plt.close()
+# # switching columns (bam files) for rows (positions)
+# df2 = df2.transpose()
+# df2.columns=groups
 
-print("Depth for the genome from the bam file is saved in " + args.out + '/genome_depth.csv')
-print("An boxplot of these depths is at " + args.out + '/genome_depth.png')
+# # creating the boxplot
+# boxplot2 = df2.boxplot(fontsize=5, rot=90, figsize=(15,8), grid=False)
+# boxplot2.plot()
+# plt.title('Average depth across genome')
+# boxplot2.set_ylabel('meandepth')
+# boxplot2.set_xlabel('position (start-end)')
+# boxplot2.figure.savefig(args.out + '/genome_depth.png', bbox_inches='tight')
+# plt.close()
+
+# print("Depth for the genome from the bam file is saved in " + args.out + '/genome_depth.csv')
+# print("An boxplot of these depths is at " + args.out + '/genome_depth.png')
 
 print("ACI is complete! (And I hope all your primers are behaving as expected!)")
