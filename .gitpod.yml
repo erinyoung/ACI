@@ -1,2 +1,2 @@
 tasks:
-  - init: pip3 install matplotlib pandas
+  - init: pip3 install matplotlib pandas pysam
