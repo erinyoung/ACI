@@ -4,31 +4,44 @@ Amplicon Coverage Inspector (ACI) is a bioinformatics tool designed to analyze t
 
 ## Installation
 ```
-git clone https://github.com/your-username/ACI.git
+git clone https://github.com/erinyoung/ACI.git
 ```
 
 ## Dependencies
-- samtools (included)
-- gnu-parallel (optional, but required if using parallelization)
+- python3.7+
+  - pandas
+  - matplotlib
+  - pysam
+
+```
+pip install pandas matplotlib pysam
+```
 
 ## Usage
 ```
 aci --bam input.bam --bed amplicon.bed --out out
 ```
 
-Final files are out.png and out.csv
+Final files are out/amplicon_depth.csv and out/amplicon_depth.png
 
-### Options
+![alt text](assets/aci.png)
+
+There are not currently options to change the look of the final image file. Instead, the amplicon_depth.csv file contains all the values in a '.csv' format that can be read into R, python, excel, or another tool for visualization.
+
+## Options
 ```
-# REQUIRED
--b, --bam     Input BAM file(s)
--d, --bed      Input amplicon bedfile
+usage: aci [-h] -b BAM [BAM ...] -d BED [-s] [-o OUT] [-t THREADS] [-v]
 
-# OPTIONAL
--o, --out      Sets prefix for result files (default: aci)
--c, --cpus     Allows for parallel processing. Uses this value for 'gnu-parallel --jobs' and 'samtools sort -@'. (default: 1)
--h, --help     Print help message and exit
--v, --version  Print version and exit
+options:
+  -h, --help            show this help message and exit
+  -b BAM [BAM ...], --bam BAM [BAM ...]
+                        (required) input bam file
+  -d BED, --bed BED     (required) amplicon bedfile
+  -s, --single          flag that specifies that reads are single-end in bam file
+  -o OUT, --out OUT     directory for results
+  -t THREADS, --threads THREADS
+                        specifies number of threads to use
+  -v, --version         print version and exit
 ```
 
 ## Bed file format
@@ -38,9 +51,9 @@ The four columns (tab-delimited only) are
 1. Reference (must the same as the reference of the bam file)
 2. Start position
 3. Stop position
-4. Name of the amplicon or bait region
+4. Name of the amplicon
 
-A header can be included in the bedfile, but the header must start with a '#'.
+ACI does not support bedfiles with headers.
 
 Example amplicon bedfile.
 ```
@@ -72,6 +85,18 @@ ACI can also be used to evaluate baits for NGS library preparation methods that 
 Baits need to allow for portions of sequence outside of the region of interest. It is not unfeasable that read1 maps prior and read2 maps downstream of a bait region if the insert size is large enough. The goal is that every sequence attached to that bait should be included, so reads that have **any** indication of being captured by a specific bait will be included. This does mean that neighboring baits can increase the coverage of a region and may mask poor baits and this should be taken into account when evaluating the output of ACI. Single-end reads are only included if they map to the bait region.
 ---> 
 
+## Testing
+
+This repository contains a test bam and bed file in the [/test](./test) subdirectory.
+
+```
+aci -b test/test.bam -d test/test.bed -o testing
+```
+
+The resulting image should look something like the following.
+![alt text](assets/amplicon_depth.png)
+
+
 ## Contributing
 Contributions are welcome! If you find any issues or have suggestions for improvements, please feel free to [open an issue](https://github.com/erinyoung/ACI/issues) or submit a pull request.
 
@@ -81,9 +106,6 @@ I just needed an individual tool that evaluates how effective a set of primers a
 
 ## License
 This project is licensed under the MIT License.
-
-## Acknowledgments
-This tool relies on the functionality provided by samtools. We would like to express our gratitude to the samtools development team for their invaluable contributions.
 
 ## Contact
 For any questions or inquiries, please [submit an issue](https://github.com/erinyoung/ACI/issues).
