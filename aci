@@ -10,7 +10,7 @@ This script will find the coverage for each amplicon in a bedfile and then graph
 Tis masqurading as a real python program.
 
 EXAMPLE:
-aci -b input.bam -d amplicon.bed
+aci -b input.bam -d amplicon.bed -o out
 '''
 
 # I tried to keep dependencies down...
@@ -25,7 +25,6 @@ import pysam
 import subprocess
 import sys
 
-import time ## for testing
 # about 30 seconds per artic V3 primer on SRR13957125
 # $ samtools coverage SRR13957125.sorted.bam
 # #rname      startpos endpos numreads covbases coverage meandepth meanbaseq meanmapq
@@ -45,7 +44,6 @@ args      = parser.parse_args()
 
 # the function that reduces the bam file to the region in question and then gets coverage
 def amplicon_depth(df, bam, region, single):
-    start_time = time.time() ## for testing
     ref        = region.split(':')[0]
     start      = int(region.split(':')[1])
     end        = int(region.split(':')[2])
@@ -53,8 +51,7 @@ def amplicon_depth(df, bam, region, single):
     subregion  = ref + ':' + str(start) + '-' + str(end)
     file_name  = os.path.basename(bam)
 
-    # print('For ' + bam + ' region ' + region + ' checkpoint 1: ' + str(time.time() - start_time)) ## for testing
-    bed1 = args.out + '/tmp.' + name + '.' + file_name + '.bed'
+    bed1 = args.out + '/tmp.' + name + '.'   + file_name + '.bed'
     bam0 = args.out + '/tmp.' + name + '.0.' + file_name
     bam1 = args.out + '/tmp.' + name + '.1.' + file_name
     bam2 = args.out + '/tmp.' + name + '.2.' + file_name
@@ -62,32 +59,26 @@ def amplicon_depth(df, bam, region, single):
     bam4 = args.out + '/tmp.' + name + '.4.' + file_name
 
     if start <= 1:
-        # print('For ' + bam + ' region ' + region + ' checkpoint 2: ' + str(time.time() - start_time)) ## for testing
         with open(bed1, mode='wt') as file:
             file.write(ref + '\t' + str(end + 1) + '\t5000000\n')
     else:
-        # print('For ' + bam + ' region ' + region + ' checkpoint 3: ' + str(time.time() - start_time)) ## for testing
         with open(bed1, mode='wt') as file:
             file.write(ref + '\t' + str('0') + '\t' + str(start - 1) + '\n' + ref + '\t' + str(end + 1) + '\t5000000\n')
 
-    # print('For ' + bam + ' region ' + region + ' checkpoint 4: ' + str(time.time() - start_time)) ## for testing
-
     # running samtools via pysam
-    # print('For ' + bam + ' region ' + region + ' checkpoint 5: ' + str(time.time() - start_time)) ## for testing
     pysam.sort('-o', bam0, bam)
    
     if os.path.exists(bam0):
-        # print('For ' + bam + ' region ' + region + ' checkpoint 6: ' + str(time.time() - start_time)) ## for testing
         pysam.index(bam0)
+        
         if single:
             pysam.view('-bh', '-o', bam1, bam0, subregion, catch_stdout=False)    
         else:
-            pysam.view('-bh', '-f2', '-o', bam1, bam0, subregion, catch_stdout=False)    
+            pysam.view('-bh','-f2', '-o', bam1, bam0, subregion, catch_stdout=False)
         os.remove(bam0)
         os.remove(bam0 + '.bai')
     
     if os.path.exists(bam1):
-        # print('For ' + bam + ' region ' + region + ' checkpoint 7: ' + str(time.time() - start_time)) ## for testing
         pysam.index(bam1)
         pysam.view('-bh', bam1, '-U', bam2, '-o', bam3, '-L', bed1, catch_stdout=False)
         os.remove(bam1)
@@ -96,32 +87,25 @@ def amplicon_depth(df, bam, region, single):
     os.remove(bed1)
 
     if os.path.exists(bam2):
-        # print('For ' + bam + ' region ' + region + ' checkpoint 8: ' + str(time.time() - start_time)) ## for testing
         pysam.index(bam2)
         if single:
-            pysam.view('-bh', '-o', bam1, bam0, subregion, catch_stdout=False)    
+            pysam.view('-bh', '-o', bam4, bam2, subregion, catch_stdout=False)    
         else:
-            pysam.view('-bh', '-f2', '-o', bam1, bam0, subregion, catch_stdout=False)
+            pysam.view('-bh', '-f2', '-o', bam4, bam2, subregion, catch_stdout=False)
         os.remove(bam2)
         os.remove(bam2 + '.bai')
         os.remove(bam3)
         
     if os.path.exists(bam4):
-        # print('For ' + bam + ' region ' + region + ' checkpoint 9: ' + str(time.time() - start_time)) ## for testing
         pysam.index(bam4)
         cov=float(pysam.coverage('--no-header', bam4, '-r', subregion).split()[6]) 
-        # print('For ' + bam + ' region ' + region + ' checkpoint 10: ' + str(time.time() - start_time)) ## for testing
         os.remove(bam4)
         os.remove(bam4 + '.bai')  
     else:
         cov=0
 
-    # print('For ' + bam + ' region ' + region + ' checkpoint 11: ' + str(time.time() - start_time)) ## for testing    
     bamindex = df.index[df['bam'] == bam]
     df.loc[bamindex, [name]] = cov
-
-    # print('For ' + bam + ' region ' + region + ' checkpoint fin: ' + str(time.time() - start_time)) ## for testing
-
 
 if not os.path.exists(args.bed):
     print('FATAL : bedfile ' + args.bed + ' does not exist. Exiting')
