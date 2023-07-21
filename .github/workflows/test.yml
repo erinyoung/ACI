@@ -13,16 +13,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install dependencies
-        run: pip install pandas matplotlib
-
-      - name: Checkout repo
-        run: git checkout
-        
-      - name: Initial tree
-        run: pwd && tree .
-        
-      - name: Samtools version
-        run: ls -alh /home/runner/work/ACI/ACI/bin/samtools/samtools && /home/runner/work/ACI/ACI/bin/samtools/samtools version
+        run: pip install pandas matplotlib pysam
         
       - name: Run ACI
         run: ./aci -b test/test.bam -d test/test.bed -o test
