@@ -44,7 +44,7 @@ parser.add_argument('-d', '--bed', required = True, type = str, help ='(required
 parser.add_argument('-s', '--single', action='store_true', help ='flag that specifies that reads are single-end in bam file')
 parser.add_argument('-o', '--out', type=str, help='directory for results', default='aci')
 parser.add_argument('-t', '--threads', type=int, help='specifies number of threads to use', default=4)
-parser.add_argument('-v', '--version', help='print version and exit', action='version', version='%(prog)s ' + '0.0.20230815')
+parser.add_argument('-v', '--version', help='print version and exit', action='version', version='%(prog)s ' + '0.1.20230815')
 args    = parser.parse_args()
 
 # the function that reduces the bam file to the region in question and then gets coverage
@@ -123,7 +123,7 @@ def amplicon_depth(df, bam, region, single):
 
 if __name__ == "__main__":
 
-    version = '0.0.20230815'
+    version = '0.1.20230815'
 
     if not os.path.exists(args.bed):
         logging.critical('bedfile ' + args.bed + ' does not exist. Exiting')
