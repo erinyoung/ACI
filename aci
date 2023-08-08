@@ -13,6 +13,8 @@ EXAMPLE:
 aci -b input.bam -d amplicon.bed -o out
 '''
 
+# https://packaging.python.org/en/latest/tutorials/packaging-projects/
+
 # I tried to keep dependencies down...
 import argparse
 import concurrent.futures
@@ -23,8 +25,8 @@ import numpy as np
 import os
 import pandas as pd
 import pysam
-import subprocess
-import sys
+# import subprocess
+# import sys
 
 # about 30 seconds per artic V3 primer on SRR13957125
 # $ samtools coverage SRR13957125.sorted.bam
@@ -32,8 +34,9 @@ import sys
 # MN908947.3  1        29903  1141595  29827    99.7458  5350.27   37.3      60
 # 15000 - 16500
 
-version = '0.0.20230815'
 logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%y-%b-%d %H:%M:%S', level=logging.INFO)
+
+# logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%y-%b-%d %H:%M:%S', level=logging.DEBUG)
 
 parser  = argparse.ArgumentParser()
 parser.add_argument('-b', '--bam', nargs = '+', required= True, type=str, help='(required) input bam file')
@@ -41,7 +44,7 @@ parser.add_argument('-d', '--bed', required = True, type = str, help ='(required
 parser.add_argument('-s', '--single', action='store_true', help ='flag that specifies that reads are single-end in bam file')
 parser.add_argument('-o', '--out', type=str, help='directory for results', default='aci')
 parser.add_argument('-t', '--threads', type=int, help='specifies number of threads to use', default=4)
-parser.add_argument('-v', '--version', help='print version and exit', action='version', version='%(prog)s ' + version)
+parser.add_argument('-v', '--version', help='print version and exit', action='version', version='%(prog)s ' + '0.0.20230815')
 args    = parser.parse_args()
 
 # the function that reduces the bam file to the region in question and then gets coverage
@@ -55,12 +58,13 @@ def amplicon_depth(df, bam, region, single):
     file_name  = os.path.basename(bam)
 
     bed1 = args.out + '/tmp.' + name + '.'   + file_name + '.bed'
-    bam0 = args.out + '/tmp.' + name + '.0.' + file_name
+    bam0 = args.out + '/tmp.' + file_name
     bam1 = args.out + '/tmp.' + name + '.1.' + file_name
     bam2 = args.out + '/tmp.' + name + '.2.' + file_name
     bam3 = args.out + '/tmp.' + name + '.3.' + file_name
     bam4 = args.out + '/tmp.' + name + '.4.' + file_name
     logging.debug('temp filenames are ' + bed1 + ', ' + bam0 + ', ' + bam1 + ', ' + bam2 + ', ' + bam3 + ', and ' + bam4 )
+    logging.debug('Made it to checkpoint 1 for ' + bam + ' and ' + region)
 
     if start <= 1:
         with open(bed1, mode='wt') as file:
@@ -69,40 +73,32 @@ def amplicon_depth(df, bam, region, single):
         with open(bed1, mode='wt') as file:
             file.write(ref + '\t' + str('0') + '\t' + str(start - 1) + '\n' + ref + '\t' + str(end + 1) + '\t5000000\n')
 
-    # running samtools via pysam
-    if os.path.exists(bam):
-        pysam.sort('-o', bam0, bam)
-        logging.debug('Made it to checkpoint 1 for ' + bam)
-   
+    # running samtools via pysam   
     if os.path.exists(bam0):
-        pysam.index(bam0)
-
-        logging.debug('Made it to checkpoint 2 for ' + bam)
+        logging.debug('Made it to checkpoint 2 for ' + bam + ' and ' + region)
         single_check = int(pysam.view('-c', '-f',  '1', bam0))
         if single_check == 0 and not single :
             single = True
             logging.warning(bam + ' is single end')
 
-        logging.debug('Made it to checkpoint 3 for ' + bam)
+        logging.debug('Made it to checkpoint 3 for ' + bam + ' and ' + region)
         if single:
             pysam.view('-bh', '-o', bam1, bam0, subregion, catch_stdout=False)    
         else:
             pysam.view('-bh','-f2', '-o', bam1, bam0, subregion, catch_stdout=False)
-        os.remove(bam0)
-        os.remove(bam0 + '.bai')
     
-    logging.debug('Made it to checkpoint 4 for ' + bam)
     if os.path.exists(bam1):
+        logging.debug('Made it to checkpoint 4 for ' + bam + ' and ' + region)
         pysam.index(bam1)
         pysam.view('-bh', bam1, '-U', bam2, '-o', bam3, '-L', bed1, catch_stdout=False)
         os.remove(bam1)
         os.remove(bam1 + '.bai')
     
-    logging.debug('Made it to checkpoint 5 for ' + bam)
+    logging.debug('Made it to checkpoint 5 for ' + bam + ' and ' + region)
     os.remove(bed1)
 
-    logging.debug('Made it to checkpoint 6 for ' + bam)
     if os.path.exists(bam2):
+        logging.debug('Made it to checkpoint 6 for ' + bam + ' and ' + region)
         pysam.index(bam2)
         if single:
             pysam.view('-bh', '-o', bam4, bam2, subregion, catch_stdout=False)    
@@ -112,8 +108,8 @@ def amplicon_depth(df, bam, region, single):
         os.remove(bam2 + '.bai')
         os.remove(bam3)
 
-    logging.debug('Made it to checkpoint 7 for ' + bam)    
     if os.path.exists(bam4):
+        logging.debug('Made it to checkpoint 7 for ' + bam + ' and ' + region)
         pysam.index(bam4)
         cov=float(pysam.coverage('--no-header', bam4, '-r', subregion).split()[6]) 
         os.remove(bam4)
@@ -121,46 +117,65 @@ def amplicon_depth(df, bam, region, single):
     else:
         cov=0
 
-    logging.debug('Made it to checkpoint 8 for ' + bam)
+    logging.debug('Made it to checkpoint 8 for ' + bam + ' and ' + region)
     bamindex = df.index[df['bam'] == bam]
     df.loc[bamindex, [name]] = cov
 
-if not os.path.exists(args.bed):
-    logging.critical('bedfile ' + args.bed + ' does not exist. Exiting')
-    exit(1)
+if __name__ == "__main__":
 
-if not os.path.exists(args.out):
-    os.mkdir(args.out)
+    version = '0.0.20230815'
 
-logging.info('ACI version :\t\t'     + str(version))
-logging.info('Number of threads :\t' + str(args.threads))
-logging.info('Final directory :\t\t' + str(args.out))
-if args.single:
-    logging.info('Read type :\t\tSingle')
-else:
-    logging.info('Read type :\t\tPaired')
-logging.info('Input bed file :\t\t'    + str(args.bed))
-logging.info('Input bam file(s) :\t' + ', '.join(args.bam))
+    if not os.path.exists(args.bed):
+        logging.critical('bedfile ' + args.bed + ' does not exist. Exiting')
+        exit(1)
 
-##### ----- ----- ----- ----- ----- #####
-##### Part 1. Amplicon depths       #####
-##### ----- ----- ----- ----- ----- #####
+    if not os.path.exists(args.out):
+        os.mkdir(args.out)
 
-logging.info('Getting depth for amplicons')
-pool      = concurrent.futures.ThreadPoolExecutor(max_workers=args.threads)
-df        = pd.DataFrame([])
-df['bam'] = args.bam
-regions   = []
+    logging.info('ACI version :\t\t'     + str(version))
+    logging.info('Number of threads :\t' + str(args.threads))
+    logging.info('Final directory :\t\t' + str(args.out))
+    if args.single:
+        logging.info('Read type :\t\tSingle')
+    else:
+        logging.info('Read type :\t\tPaired')
+    logging.info('Input bed file :\t\t'    + str(args.bed))
+    logging.info('Input bam file(s) :\t' + ', '.join(args.bam))
 
-with open(args.bed) as file:
-    for line in file:
-        ref=str(line.split('\t')[0])
-        start=str(int(line.split('\t')[1]))
-        end=str(int(line.split('\t')[2]))
-        name=str(line.split('\t')[3])
-        regions.append(ref + ':' + start + ':' + end + ':' + name)
+    ##### ----- ----- ----- ----- ----- #####
+    ##### Part 1. Amplicon depths       #####
+    ##### ----- ----- ----- ----- ----- #####
 
-for input in list(itertools.product(args.bam,regions)):
+    pool      = concurrent.futures.ThreadPoolExecutor(max_workers=args.threads)
+    df        = pd.DataFrame([])
+    df['bam'] = args.bam
+    regions   = []
+
+    with open(args.bed) as file:
+        for line in file:
+            ref   = str(line.split('\t')[0])
+            start = str(int(line.split('\t')[1]))
+            end   = str(int(line.split('\t')[2]))
+            name  = str(line.split('\t')[3])
+            regions.append(ref + ':' + start + ':' + end + ':' + name)
+
+    for bam in args.bam:
+        file_name  = os.path.basename(bam)
+        bam0 = args.out + '/tmp.' + file_name
+        logging.info('Sorting and indexing ' + file_name)
+
+        if os.path.exists(bam):
+            pysam.sort('-o', bam0, '-@', str(args.threads), bam)
+            logging.debug('Made it to checkpoint A for ' + bam)
+        
+        if os.path.exists(bam0):
+            pysam.index(bam0)
+            logging.debug('Made it to checkpoint B for ' + bam)
+
+    logging.info('Finished sorting and indexing')
+
+    logging.info('Getting depth for amplicons')
+    for input in list(itertools.product(args.bam,regions)):
         if (args.single):
             pool.submit(amplicon_depth, df, input[0], input[1], True)
             logging.debug('Single bam file: ' + input[0])
@@ -171,91 +186,86 @@ for input in list(itertools.product(args.bam,regions)):
             # amplicon_depth(df,input[0],input[1],False)
             logging.debug('Paired bam file: ' + input[0])
             logging.debug('Region: ' + input[1])
+    logging.debug('Finished getting depth for amplicons')
 
-pool.shutdown(wait=True)
-logging.debug('Finished pooled function')
+    pool.shutdown(wait=True)
 
-# writing results to a file
-df.to_csv(args.out + '/amplicon_depth.csv', index=False)
+    logging.debug('Deleting tmp files')
+    for bam in args.bam:
+        bam0 = args.out + '/tmp.' + os.path.basename(bam) 
+        os.remove(bam0)
+        os.remove(bam0 + '.bai')
 
-# getting rid of column with all the bam names
-df.drop('bam', axis=1, inplace=True)
+    # writing results to a file
+    df.to_csv(args.out + '/amplicon_depth.csv', index=False)
 
-boxplot = df.boxplot(fontsize=5, rot=90, figsize=(15,8), grid=False)
-boxplot.plot()
-plt.title('Primer Assessment')
-boxplot.set_ylabel('meandepth')
-boxplot.set_xlabel('amplicon name')
-boxplot.figure.savefig(args.out + '/amplicon_depth.png', bbox_inches='tight')
-plt.close()
+    # getting rid of column with all the bam names
+    df.drop('bam', axis=1, inplace=True)
 
-logging.info('Depth for amplicons is saved in '  + args.out + '/amplicon_depth.csv')
-logging.info('An boxplot of these depths is at ' + args.out + '/amplicon_depth.png')
+    boxplot = df.boxplot(fontsize=5, rot=90, figsize=(15,8), grid=False)
+    boxplot.plot()
+    plt.title('Primer Assessment')
+    boxplot.set_ylabel('meandepth')
+    boxplot.set_xlabel('amplicon name')
+    boxplot.figure.savefig(args.out + '/amplicon_depth.png', bbox_inches='tight')
+    plt.close()
 
-# ##### ----- ----- ----- ----- ----- #####
-# ##### Part 2. Genome/bam depths     #####
-# ##### ----- ----- ----- ----- ----- #####
-# def genome_depth(df1, bam):
-#     file_name = os.path.basename(bam)
+    logging.info('Depth for amplicons is saved in '  + args.out + '/amplicon_depth.csv')
+    logging.info('An boxplot of these depths is at ' + args.out + '/amplicon_depth.png')
 
-#     df2 = pd.DataFrame([x.split('\t') for x in pysam.depth(bam).split('\n')])
-#     df2.columns = ['ref', 'pos', 'cov']
+    # ##### ----- ----- ----- ----- ----- #####
+    # ##### Part 2. Genome/bam depths     #####
+    # ##### ----- ----- ----- ----- ----- #####
+    # def genome_depth(df1, bam):
+    #     file_name = os.path.basename(bam)
+    #     df2 = pd.DataFrame([x.split('\t') for x in pysam.depth(bam).split('\n')])
+    #     df2.columns = ['ref', 'pos', 'cov']
+    #     df3 = pd.DataFrame(columns = ['bam'] + df2['pos'].to_list())
+    #     df3.loc[1] = [bam] + df2['cov'].to_list()
+    #     df1 = pd.merge(df1, df3, how = 'outer')
 
-#     df3 = pd.DataFrame(columns = ['bam'] + df2['pos'].to_list())
-#     df3.loc[1] = [bam] + df2['cov'].to_list()
+    # # now getting depth information for comparison
+    # df1        = pd.DataFrame([])
+    # df1['bam'] = args.bam
 
-#     df1 = pd.merge(df1, df3, how = 'outer')
-#     print('df3')
-#     print(df3)
-#     print('df1')
-#     print(df1)
+    # for bam in args.bam:
+    #     genome_depth(df1, bam)
 
-# # now getting depth information for comparison
-# df1        = pd.DataFrame([])
-# df1['bam'] = args.bam
+    # # dividing positions into group for boxplot
+    # df1['group'] = (df1['pos'] / 500).apply(np.floor)
+    # df1 = df1.drop(['ref', 'pos'], axis=1)
 
-# for bam in args.bam:
-#     genome_depth(df1, bam)
+    # # getting a df for graphing
+    # df2 = df1.groupby(['group']).mean().reset_index()
+    # df2['start'] = (df2['group'] * 500).astype(int)
+    # df2['end']   = (df2['group'] * 500 + 499).astype(int)
+    # df2['pos']   = df2['start'].astype('str') + '-' + df2['end'].astype('str')
 
-# print('Out of the function')
-# print(df1)
-# exit()
+    # # remove depth file
+    # os.remove(args.out + '/depth.txt')
 
-# # dividing positions into group for boxplot
-# df1['group'] = (df1['pos'] / 500).apply(np.floor)
-# df1 = df1.drop(['ref', 'pos'], axis=1)
+    # # writing results to a file
+    # df2.to_csv(args.out + '/genome_depth.csv', index=False)
 
-# # getting a df for graphing
-# df2 = df1.groupby(['group']).mean().reset_index()
-# df2['start'] = (df2['group'] * 500).astype(int)
-# df2['end']   = (df2['group'] * 500 + 499).astype(int)
-# df2['pos']   = df2['start'].astype('str') + '-' + df2['end'].astype('str')
+    # groups=df2['pos'].to_list()
 
-# # remove depth file
-# os.remove(args.out + '/depth.txt')
+    # # getting rid of column with all the group names
+    # df2 = df2.drop(['group', 'pos', 'start','end'], axis=1)
 
-# # writing results to a file
-# df2.to_csv(args.out + '/genome_depth.csv', index=False)
+    # # switching columns (bam files) for rows (positions)
+    # df2 = df2.transpose()
+    # df2.columns=groups
 
-# groups=df2['pos'].to_list()
+    # # creating the boxplot
+    # boxplot2 = df2.boxplot(fontsize=5, rot=90, figsize=(15,8), grid=False)
+    # boxplot2.plot()
+    # plt.title('Average depth across genome')
+    # boxplot2.set_ylabel('meandepth')
+    # boxplot2.set_xlabel('position (start-end)')
+    # boxplot2.figure.savefig(args.out + '/genome_depth.png', bbox_inches='tight')
+    # plt.close()
 
-# # getting rid of column with all the group names
-# df2 = df2.drop(['group', 'pos', 'start','end'], axis=1)
+    # loggin.info('Depth for the genome from the bam file is saved in ' + args.out + '/genome_depth.csv')
+    # loggin.info('An boxplot of these depths is at ' + args.out + '/genome_depth.png')
 
-# # switching columns (bam files) for rows (positions)
-# df2 = df2.transpose()
-# df2.columns=groups
-
-# # creating the boxplot
-# boxplot2 = df2.boxplot(fontsize=5, rot=90, figsize=(15,8), grid=False)
-# boxplot2.plot()
-# plt.title('Average depth across genome')
-# boxplot2.set_ylabel('meandepth')
-# boxplot2.set_xlabel('position (start-end)')
-# boxplot2.figure.savefig(args.out + '/genome_depth.png', bbox_inches='tight')
-# plt.close()
-
-# print('Depth for the genome from the bam file is saved in ' + args.out + '/genome_depth.csv')
-# print('An boxplot of these depths is at ' + args.out + '/genome_depth.png')
-
-logging.info('ACI is complete! (And I hope all your primers are behaving as expected!)')
+    logging.info('ACI is complete! (I hope all your primers are behaving as expected!)')

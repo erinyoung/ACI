@@ -1,0 +1,23 @@
+[project]
+name = "ACI"
+version = "0.0.20230815"
+authors = ["erinyoung"]
+maintainers = ["erinyoung"]
+description = "Amplicon Coverage Inspector determines coverage for amplicons"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Researchers",
+]
+keywords = [
+    "bioinformatics",
+    "amplicon",
+    "coverage",
+    "visualization",
+]
+[project.urls]
+"Homepage" = "https://github.com/erinyoung/ACI"
+"Bug Tracker" = "https://github.com/erinyoung/ACI/issues"
