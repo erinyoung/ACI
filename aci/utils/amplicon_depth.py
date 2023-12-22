@@ -2,59 +2,71 @@
 
 """ Use pysam to get depth for amplicon region """
 
+import logging
 import os
 import pysam
-from . import subregion, within, without
+from .subregion import subregion
+from .within import within
+from .without import without
 
-def amplicon_depth(df, bam, out, region):
+def amplicon_depth(df, meta, region):
     """ Use pysam to get depth for amplicon region """
 
-    # setting default value
-    cov       = 0
+    name = region.split(':')[3]
 
-    # naming temporary files
-    # pylint was complaining about too many variables
-    # file_name = os.path.basename(bam)
-    # name      = region.split(':')[3]
-    bam0      = out + '/tmp.' + os.path.basename(bam)
-    bam1      = out + '/tmp.' + region.split(':')[3] + '.1.' + os.path.basename(bam)
-    bam2      = out + '/tmp.' + region.split(':')[3] + '.2.' + os.path.basename(bam)
-    bam3      = out + '/tmp.' + region.split(':')[3] + '.3.' + os.path.basename(bam)
-    bam4      = out + '/tmp.' + region.split(':')[3] + '.4.' + os.path.basename(bam)
-    bed       = out + '/tmp.' + region.split(':')[3] + '.' + os.path.basename(bam) + '.bed'
+    # pylint was complaining about the number of variables
+    # so they're all dict values instead
+    meta['after_reduction_bam']      = meta['out'] + '/tmp.' + name + '.1.' + meta['file_name']
+    meta['removing_outside_matches'] = meta['out'] + '/tmp.' + name + '.2.' + meta['file_name']
+    meta['junk_bam']                 = meta['out'] + '/tmp.' + name + '.3.' + meta['file_name']
+    meta['final_bam']                = meta['out'] + '/tmp.' + name + '.4.' + meta['file_name']
+    meta['subregion_bed']            = meta['out'] + '/tmp.' + name + '.'   + meta['file_name'] + '.bed' # pylint: disable=C0301
+    logging.debug('The filenames are going to be :')
+    logging.debug(meta)
 
     # getting subregion information and creating bedfile
-    subrange  = subregion(region, bed) # pylint: disable=E1102
+    subrange  = subregion(region, meta['subregion_bed'])
 
     # reduce bam file to something smaller
-    if os.path.exists(bam0):
-        within(bam0, bam1, subrange) # pylint: disable=E1102
+    if os.path.exists(meta['initial_sorted_bam']):
+        logging.debug('Step 1. reducing bam for speed for ' + meta['initial_sorted_bam']) # pylint: disable=W1201
+        within(meta['initial_sorted_bam'], meta['after_reduction_bam'], subrange)
 
-    if os.path.exists(bam1):
-        pysam.index(bam1)
+    if os.path.exists(meta['after_reduction_bam']):
+        pysam.index(meta['after_reduction_bam'])
 
         # remove all reads that fall outside of region of interest
-        without(bam1, bam2, bam3, subrange) # pylint: disable=E1102
+        # warning : this is the slow part of the script
+        logging.debug('Step 2. reducing bam for speed for ' + meta['initial_sorted_bam']) # pylint: disable=W1201
+        without(meta['after_reduction_bam'], meta['removing_outside_matches'], meta['junk_bam'], meta['subregion_bed']) # pylint: disable=C0301
 
-    if os.path.exists(bam2):
-        pysam.index(bam2)
+    if os.path.exists(meta['removing_outside_matches']):
+        pysam.index(meta['removing_outside_matches'])
 
         # get only reads that are within subrange
-        within(bam2, bam4, subrange) # pylint: disable=E1102
+        logging.debug('Step 3. final reduction for ' + meta['initial_sorted_bam']) # pylint: disable=W1201
+        within(meta['removing_outside_matches'], meta['final_bam'], subrange)
 
-    if os.path.exists(bam4):
-        pysam.index(bam4)
+    if os.path.exists(meta['final_bam']):
+        pysam.index(meta['final_bam'])
 
         # get the coverage of the region (finally!)
-        cov = float(pysam.coverage('--no-header', bam4, '-r', subrange).split()[6])
+        logging.debug('Step 4. getting coverage for ' + meta['initial_sorted_bam'] + ' over ' + subrange) # pylint: disable=C0301
+        logging.debug(pysam.coverage('--no-header', meta['final_bam'], '-r', subrange).strip())
+        cov = float(pysam.coverage('--no-header', meta['final_bam'], '-r', subrange).split()[6])
+    else:
+        cov = float(0.0)
+    logging.debug('The coverage for ' + meta['initial_sorted_bam'] + ' over ' + subrange + ' is ' + str(cov)) # pylint: disable=W1201,C0301
 
     # removing files
-    tmpfiles = [bed, bam1, bam2, bam3, bam4]
+    tmpfiles = ['after_reduction_bam', 'removing_outside_matches', 'junk_bam', 'final_bam', 'subregion_bed'] # pylint: disable=C0301
     for file in tmpfiles:
-        if os.path.exists(file):
-            os.remove(file)
-        if os.path.exists(file + '.bai'):
-            os.remove(file + '.bai')
+        if os.path.exists(meta[file]):
+            os.remove(meta[file])
+        if os.path.exists(meta[file] + '.bai'):
+            os.remove(meta[file] + '.bai')
 
-    bamindex = df.index[df['bam'] == bam]
+    bamindex = df.index[df['bam'] == meta['initial_bam']]
     df.loc[bamindex, [region.split(':')[3]]] = cov
+
+    return [meta['initial_bam'], name, cov]

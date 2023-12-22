@@ -2,6 +2,8 @@
 
 """ Takes a bed file and turns the lines into strings """
 
+import logging
+
 def get_regions(bed):
     """ Takes a bed file and turns the lines into strings """
 
@@ -13,5 +15,8 @@ def get_regions(bed):
             end   = str(int(line.split('\t')[2]))
             name  = str(line.split('\t')[3])
             regions.append(ref + ':' + start + ':' + end + ':' + name)
+
+    logging.debug('Regions extracted from bedfile:')
+    logging.debug(regions)
 
     return regions

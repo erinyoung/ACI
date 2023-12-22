@@ -5,11 +5,11 @@
 import os
 import pysam
 
-def prep(meta, threads):
+def prep(initial, final, threads):
     """ Sorts and indexes bam files listed in dic """
 
-    if os.path.exists(bam0):
-        pysam.sort('-o', bam1, '-@', str(threads), bam0)
+    if os.path.exists(initial):
+        pysam.sort('-o', final, '-@', str(threads), initial)
 
-    if os.path.exists(bam1):
-        pysam.index(bam1)
+    if os.path.exists(final):
+        pysam.index(final)
