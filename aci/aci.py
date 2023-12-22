@@ -18,15 +18,16 @@ import argparse
 import concurrent.futures
 import itertools
 import logging
-import matplotlib.pyplot as plt
-import numpy as np
 import os
+import sys
 import pandas as pd
-import pysam
-# import subprocess
-# import sys
 
-from .utils import get_regions, prep
+from utils.amplicon_depth   import amplicon_depth   # pylint: disable=E0401
+from utils.column_names     import column_names     # pylint: disable=E0401
+from utils.get_regions      import get_regions      # pylint: disable=E0401
+from utils.plotting_boxplot import plotting_boxplot # pylint: disable=E0401
+from utils.prep             import prep             # pylint: disable=E0401
+from utils.subregion        import subregion        # pylint: disable=E0401
 
 # about 30 seconds per artic V3 primer on SRR13957125
 # $ samtools coverage SRR13957125.sorted.bam
@@ -34,84 +35,85 @@ from .utils import get_regions, prep
 # MN908947.3  1        29903  1141595  29827    99.7458  5350.27   37.3      60
 # 15000 - 16500
 
-logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%y-%b-%d %H:%M:%S', level=logging.INFO) # pylint: disable=C0301
+#logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%y-%b-%d %H:%M:%S', level=logging.INFO) # pylint: disable=C0301
 
-# logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%y-%b-%d %H:%M:%S', level=logging.DEBUG) # pylint: disable=C0301
+logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%y-%b-%d %H:%M:%S', level=logging.DEBUG) # pylint: disable=C0301
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-b', '--bam', nargs = '+', required = True, type = str, help='(required) input bam file(s)')
 parser.add_argument('-d', '--bed', required = True, type = str, help ='(required) amplicon bedfile')
 parser.add_argument('-o', '--out', required = False, type = str, help='directory for results', default='aci')
 parser.add_argument('-t', '--threads', required = False, type = int, help='specifies number of threads to use', default=4)
-parser.add_argument('-v', '--version', help='print version and exit', action='version', version='%(prog)s ' + '0.1.20230815')
+parser.add_argument('-v', '--version', help='print version and exit', action='version', version='%(prog)s 1.0.20231222')
 args = parser.parse_args()
 
 if __name__ == "__main__":
 
-    version = '0.1.20230815'
+    VERSION = '1.0.20231222'
 
     if not os.path.exists(args.bed):
-        logging.critical('bedfile ' + args.bed + ' does not exist. Exiting')
-        exit(1)
+        logging.critical('bedfile ' + args.bed + ' does not exist. Exiting') # pylint: disable=W1201
+        sys.exit(2)
 
     if not os.path.exists(args.out):
         os.mkdir(args.out)
 
-    logging.info('ACI version :\t\t'     + str(version))
-    logging.info('Number of threads :\t' + str(args.threads))
-    logging.info('Final directory :\t\t' + str(args.out))
-    logging.info('Input bed file :\t\t'    + str(args.bed))
-    logging.info('Input bam file(s) :\t' + ', '.join(args.bam))
+    logging.info('ACI version :\t\t'     + str(VERSION))        # pylint: disable=W1201
+    logging.info('Number of threads :\t' + str(args.threads))   # pylint: disable=W1201
+    logging.info('Final directory :\t\t' + str(args.out))       # pylint: disable=W1201
+    logging.info('Input bed file :\t\t'  + str(args.bed))       # pylint: disable=W1201
+    logging.info('Input bam file(s) :\t' + ', '.join(args.bam)) # pylint: disable=W1201
 
     ##### ----- ----- ----- ----- ----- #####
     ##### Part 1. Amplicon depths       #####
     ##### ----- ----- ----- ----- ----- #####
 
-    pool      = concurrent.futures.ThreadPoolExecutor(max_workers=args.threads)
-    df        = pd.DataFrame([])
-    df['bam'] = args.bam
     bed       = args.bed
     out       = args.out
     threads   = args.threads
 
-    regions = get_regions(bed) 
+    # setting up the dataframe
+    columns   = column_names(bed)
+    df        = pd.DataFrame(columns= ['bam'] + columns)
+    df['bam'] = args.bam
+    logging.debug('Initial empty dataframe:')
+    logging.debug(df)
 
-# >>> d = {}
-# >>> d['dict1'] = {}
-# >>> d['dict1']['innerkey'] = 'value'
-# >>> d['dict1']['innerkey2'] = 'value2'
-# >>> d
-# {'dict1': {'innerkey': 'value', 'innerkey2': 'value2'}}
+    # getting regions for parallel processing
+    regions = get_regions(bed)
 
     meta = {}
     for bam in args.bam:
-        meta['bam']                = {}
-        meta['initial_bam']        = bam
-        meta['bam']['file_name']   = os.path.basename(bam)
-        meta['initial_sorted_bam'] = out + '/tmp.' + os.path.basename(bam)
+        meta[bam]                       = {}
+        meta[bam]['initial_bam']        = bam
+        meta[bam]['out']                = out
+        meta[bam]['file_name']          = os.path.basename(bam)
+        meta[bam]['initial_sorted_bam'] = out + '/tmp.' + os.path.basename(bam)
+        meta[bam]['initial_sorted_bai'] = meta[bam]['initial_sorted_bam'] + '.bai'
 
-        logging.info('Sorting and indexing ' + meta['bam']['file_name'])
-        prep(meta['bam'], threads)
-
+        logging.info('Sorting and indexing ' + meta[bam]['file_name']) # pylint: disable=W1201
+        prep(meta[bam]['initial_bam'], meta[bam]['initial_sorted_bam'], threads)
     logging.info('Finished sorting and indexing')
 
-    # logging.info('Getting depth for amplicons')
-    # for input in list(itertools.product(args.bam, regions)):
-    #     #pool.submit(amplicon_depth, df, input[0], input[1], False)
-    #     amplicon_depth(df,input[0],input[1],False)
-    #     logging.debug('Region: ' + input[1])
-    # logging.debug('Finished getting depth for amplicons')
+    logging.info('Getting depth for amplicons')
+    logging.debug('List for parallel processing:')
+    logging.debug(list(itertools.product(args.bam, regions)))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.threads) as executor:
+        for bam, subregion in list(itertools.product(args.bam, regions)):
+            results = [executor.submit(amplicon_depth, df, meta[bam], subregion)]
+            # keeping the line below for testing
+            # results = amplicon_depth(df, meta[bam], subregion)
 
-    # pool.shutdown(wait=True)
+        for f in concurrent.futures.as_completed(results):
+            logging.debug(f.result())
 
-    # logging.debug('Deleting tmp files')
-    # for bam in args.bam:
-    #     bam0 = args.out + '/tmp.' + os.path.basename(bam) 
-    #     os.remove(bam0)
-    #     os.remove(bam0 + '.bai')
+    logging.debug('The final dataframe is:')
+    logging.debug(df)
 
-    logging.info('Depth for amplicons is saved in '  + args.out + '/amplicon_depth.csv')
-    logging.info('An boxplot of these depths is at ' + args.out + '/amplicon_depth.png')
+    plotting_boxplot(df, out)
+
+    logging.info('Depth for amplicons is saved in '  + args.out + '/amplicon_depth.csv') # pylint: disable=W1201
+    logging.info('An boxplot of these depths is at ' + args.out + '/amplicon_depth.png') # pylint: disable=W1201
 
     # ##### ----- ----- ----- ----- ----- #####
     # ##### Part 2. Genome/bam depths     #####
@@ -167,5 +169,13 @@ if __name__ == "__main__":
 
     # loggin.info('Depth for the genome from the bam file is saved in ' + args.out + '/genome_depth.csv')
     # loggin.info('An boxplot of these depths is at ' + args.out + '/genome_depth.png')
+
+
+    logging.debug('Deleting tmp files')
+    for bam in args.bam:
+        if os.path.exists(meta[bam]['initial_sorted_bam']):
+            os.remove(meta[bam]['initial_sorted_bam'])
+        if os.path.exists(meta[bam]['initial_sorted_bai']):
+            os.remove(meta[bam]['initial_sorted_bai'])
 
     logging.info('ACI is complete! (I hope all your primers are behaving as expected!)')
