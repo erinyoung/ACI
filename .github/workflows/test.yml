@@ -16,16 +16,13 @@ jobs:
         run: pip install pandas matplotlib pysam
         
       - name: Run ACI
-        run: ./aci -b test/test.bam -d test/test.bed -o test
-
-      - name: Run ACI with single flag
-        run: ./aci -b test/test.bam -d test/test.bed -o test1 -s
+        run: ./aci/aci.py -b test/test.bam -d test/test.bed -o testing
 
       - name: Run ACI version
-        run: ./aci -v
+        run: ./aci/aci.py -v
       
       - name: Run ACI help
-        run: ./aci -h
+        run: ./aci/aci.py -h
 
       - name : Final tree
         run: tree .
