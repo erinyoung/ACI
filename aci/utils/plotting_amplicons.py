@@ -5,7 +5,7 @@
 import logging
 import matplotlib.pyplot as plt
 
-def plotting_boxplot(df, out):
+def plotting_amplicons(df, out):
     """ graphs the dataframe """
 
     # writing results to a file

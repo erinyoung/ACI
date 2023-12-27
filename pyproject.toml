@@ -1,6 +1,6 @@
 [project]
 name = "ACI"
-version = "0.0.20230815"
+version = "1.0.20231222"
 authors = ["erinyoung"]
 maintainers = ["erinyoung"]
 description = "Amplicon Coverage Inspector determines coverage for amplicons"

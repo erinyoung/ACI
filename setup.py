@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='aci',
-    version='0.1.20230815',
+    version='1.0.20231222',
     author='Erin Young',
     author_email='eriny@utah.gov',
     description='Visualization of coverage for amplicon sequencing',
