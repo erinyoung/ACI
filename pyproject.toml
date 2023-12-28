@@ -1,13 +1,10 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "setuptools-git-versioning"]
+requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools-git-versioning]
-enabled = true
 
 [project]
 name = "amplicon_coverage_inspector"
-dynamic = ["version"]
+version = "1.0.20231222"
 authors = [
     {name = "Erin Young", email = "eriny@utah.gov"}
 ]
@@ -19,11 +16,9 @@ readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.7"
 classifiers = [
-    "Developing Status :: 5 - Production/Stable 
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Intended Audience :: Researchers",
 ]
 keywords = [
     "bioinformatics",
@@ -32,11 +27,14 @@ keywords = [
     "visualization",
 ]
 dependencies = [
-    pandas>=2.1.4,
-    pysam>=0.22.0,
-    matplotlib>=3.8.2,
-    numpy>=1.26.2,
+    "pandas>=2.1.4",
+    "pysam>=0.22.0",
+    "matplotlib>=3.8.2",
+    "numpy>=1.26.2",
 ]
+
+[project.scripts]
+aci = "aci/aci.py:main"
 
 [project.urls]
 "Homepage" = "https://github.com/erinyoung/ACI"
