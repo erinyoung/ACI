@@ -2,9 +2,9 @@
 
 """ Split datafame bam column into multiple columns """
 
-import pandas as pd
 import logging
-import numpy as np
+import sys
+import pandas as pd
 
 from .group_create import group_create
 from .group_mean import group_mean
@@ -31,8 +31,8 @@ def split_dataframe(df):
     logging.debug(references)
 
     if len(references) > 1:
-        logging.fatal('Each bam file should have the same reference, but there are more than one references here!')
-        exit(1)
+        logging.fatal('Bam files have more than one reference!')
+        sys.exit(1)
 
     df_split = group_create(positions)
 
