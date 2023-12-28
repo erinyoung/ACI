@@ -3,11 +3,10 @@
 """ Creates groups """
 
 import pandas as pd
-import logging
 import numpy as np
 
 def group_create(positions):
-    # dividing positions into group for boxplot
+    """ Creates groups for later averaging """
 
     df = pd.DataFrame([])
     df['pos'] = positions
@@ -20,4 +19,3 @@ def group_create(positions):
     df['pos']   = df['start'].astype('str') + '-' + df['end'].astype('str')
 
     return df[['pos', 'group']]
-    
