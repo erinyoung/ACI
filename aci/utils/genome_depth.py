@@ -2,9 +2,9 @@
 
 """ Gets coverage for bam file """
 
+import logging
 import pandas as pd
 import pysam
-import logging
 
 def genome_depth(meta):
     """ Takes a bam file file and gets coverage """
@@ -19,7 +19,7 @@ def genome_depth(meta):
     df['bam'] = meta['file_name']
     df = df.dropna()
 
-    logging.debug('pysam results for ' + meta['sorted_bam'])
+    logging.debug('pysam results for ' + meta['sorted_bam']) # pylint: disable=W1201
     logging.debug(df)
 
     return df
