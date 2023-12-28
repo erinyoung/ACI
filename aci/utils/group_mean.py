@@ -2,8 +2,6 @@
 
 """ Gets mean for each group """
 
-import pandas as pd
-import logging
 import numpy as np
 
 def group_mean(df, name):
