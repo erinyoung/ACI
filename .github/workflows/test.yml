@@ -16,7 +16,7 @@ jobs:
         run: pip install pandas matplotlib pysam
         
       - name: Run ACI
-        run: ./aci/aci.py -b test/test.bam -d test/test.bed -o testing
+        run: ./aci/aci.py -b test/data/test.bam -d test/data/test.bed -o testing
 
       - name: Run ACI version
         run: ./aci/aci.py -v
