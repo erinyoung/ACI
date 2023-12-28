@@ -23,14 +23,14 @@ import sys
 import tempfile
 import pandas as pd
 
-from utils.amplicon_depth       import amplicon_depth   # pylint: disable=E0401
-from utils.column_names         import column_names     # pylint: disable=E0401
-from utils.get_regions          import get_regions      # pylint: disable=E0401
-from utils.genome_depth         import genome_depth
-from utils.plotting_amplicons   import plotting_amplicons # pylint: disable=E0401
-from utils.plotting_depth       import plotting_depth
-from utils.prep                 import prep             # pylint: disable=E0401
-from utils.subregion            import subregion        # pylint: disable=E0401
+from utils.amplicon_depth       import amplicon_depth       # pylint: disable=E0401
+from utils.column_names         import column_names         # pylint: disable=E0401
+from utils.get_regions          import get_regions          # pylint: disable=E0401
+from utils.genome_depth         import genome_depth         # pylint: disable=E0401
+from utils.plotting_amplicons   import plotting_amplicons   # pylint: disable=E0401
+from utils.plotting_depth       import plotting_depth       # pylint: disable=E0401
+from utils.prep                 import prep                 # pylint: disable=E0401
+from utils.subregion            import subregion            # pylint: disable=E0401
 
 # about 30 seconds per artic V3 primer on SRR13957125
 # $ samtools coverage SRR13957125.sorted.bam
@@ -39,12 +39,12 @@ from utils.subregion            import subregion        # pylint: disable=E0401
 # 15000 - 16500
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-b', '--bam', nargs = '+', required = True, type = str, help = '(required) input bam file(s)')
+parser.add_argument('-b', '--bam', nargs = '+', required = True, type = str, help = '(required) input bam file(s)') # pylint: disable=C0301
 parser.add_argument('-d', '--bed', required = True, type = str, help ='(required) amplicon bedfile')
-parser.add_argument('-o', '--out', required = False, type = str, help = 'directory for results', default = 'aci')
-parser.add_argument('-log', '--loglevel', required = False, type = str, help = 'logging level', default = 'INFO')
-parser.add_argument('-t', '--threads', required = False, type = int, help = 'specifies number of threads to use', default=4)
-parser.add_argument('-v', '--version', help='print version and exit', action = 'version', version = '%(prog)s 1.0.20231222')
+parser.add_argument('-o', '--out', required = False, type = str, help = 'directory for results', default = 'aci') # pylint: disable=C0301
+parser.add_argument('-log', '--loglevel', required = False, type = str, help = 'logging level', default = 'INFO') # pylint: disable=C0301
+parser.add_argument('-t', '--threads', required = False, type = int, help = 'specifies number of threads to use', default=4) # pylint: disable=C0301
+parser.add_argument('-v', '--version', help='print version and exit', action = 'version', version = '%(prog)s 1.0.20231222') # pylint: disable=C0301
 args = parser.parse_args()
 
 if __name__ == "__main__":
@@ -53,8 +53,8 @@ if __name__ == "__main__":
     ##### Part 0. Setup                 #####
     ##### ----- ----- ----- ----- ----- #####
 
-    logging.basicConfig(format='%(asctime)s - %(message)s', 
-        datefmt = '%y-%b-%d %H:%M:%S', 
+    logging.basicConfig(format='%(asctime)s - %(message)s',
+        datefmt = '%y-%b-%d %H:%M:%S',
         level=args.loglevel.upper())
 
     VERSION = '1.0.20231222'
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         logging.critical('bedfile ' + args.bed + ' does not exist. Exiting') # pylint: disable=W1201
         sys.exit(2)
 
-    if not os.path.exists(args.out):    
+    if not os.path.exists(args.out):
         os.mkdir(args.out)
 
     logging.info('ACI version :\t\t'     + str(VERSION))        # pylint: disable=W1201
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     bed       = args.bed
     out       = args.out
     threads   = args.threads
-    temp_dir  = tempfile.TemporaryDirectory(dir = args.out)
+    temp_dir  = tempfile.TemporaryDirectory(dir = args.out) # pylint: disable=R1732
 
     meta = {}
     filenames = []
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
         logging.info('Sorting and indexing ' + meta[bam]['file_name']) # pylint: disable=W1201
         prep(meta[bam]['initial_bam'], meta[bam]['sorted_bam'], threads)
-    logging.info('Finished sorting and indexing')        
+    logging.info('Finished sorting and indexing')
 
     logging.debug('the filenames for all the bam files are')
     logging.debug(filenames)
@@ -133,17 +133,21 @@ if __name__ == "__main__":
     # ##### ----- ----- ----- ----- ----- #####
     # ##### Part 2. Genome/bam depths     #####
     # ##### ----- ----- ----- ----- ----- #####
- 
+
     df_pysam = pd.DataFrame([])
+
+    # TODO : Fix this so that it's concurrent friendly
+
     for bam in args.bam:
         df_pysam_results = genome_depth(meta[bam])
         df_pysam = pd.concat([df_pysam, df_pysam_results], ignore_index=True)
+
     logging.debug('The final pysam dataframe is:')
     logging.debug(df_pysam)
 
     plotting_depth(df_pysam, out)
 
-    logging.info('Depth for the genome from the bam file is saved in ' + out + '/genome_depth.csv')
-    logging.info('An boxplot of these depths is at ' + out + '/genome_depth.png')
+    logging.info('Depth for the genome from the bam file is saved in ' + out + '/genome_depth.csv') # pylint: disable=W1201
+    logging.info('An boxplot of these depths is at ' + out + '/genome_depth.png') # pylint: disable=W1201
 
     logging.info('ACI is complete! (I hope all your primers are behaving as expected!)')
