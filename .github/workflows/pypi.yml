@@ -1,0 +1,26 @@
+name: PyPi
+
+on: 
+  workflow_dispatch:
+  release:
+    types: [published]
+
+run-name: Upload
+
+jobs:
+
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        run: python setup.py sdist bdist_wheel
+
+        # uploading to test.pypi
+        # python setup.py sdist bdist_wheel
+        # twine upload --repository testpypi dist/*
+        # pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple amplicon-coverage-inspector
+        # aci -b tests/data/test.bam -d tests/data/test.bed -o testing
+        # twine upload dist/*
