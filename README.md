@@ -43,14 +43,16 @@ There are not currently options to change the look of the final image file. Inst
 
 ## Options
 ```
-usage: aci [-h] -b BAM [BAM ...] -d BED [-s] [-o OUT] [-t THREADS] [-v]
+usage: aci [-h] -b BAM [BAM ...] -d BED [-o OUT] [-log LOGLEVEL] [-t THREADS] [-v]
 
 options:
   -h, --help            show this help message and exit
   -b BAM [BAM ...], --bam BAM [BAM ...]
-                        (required) input bam file
+                        (required) input bam file(s)
   -d BED, --bed BED     (required) amplicon bedfile
   -o OUT, --out OUT     directory for results
+  -log LOGLEVEL, --loglevel LOGLEVEL
+                        logging level
   -t THREADS, --threads THREADS
                         specifies number of threads to use
   -v, --version         print version and exit
