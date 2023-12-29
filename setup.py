@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='amplicon_coverage_inspector',
-    version='1.0.20231222',
+    version='1.2.20231229',
     author='Erin Young',
     author_email='eriny@utah.gov',
     url="https://github.com/erinyoung/ACI",
@@ -27,12 +27,12 @@ setup(
         "coverage",
         "visualization",
     ],
-    python_requires=">=3.7, <4",
+    python_requires=">=3.8, <4",
     install_requires=[
-        "pandas>=2.1.4",
-        "pysam>=0.22.0",
-        "matplotlib>=3.8.2",
-        "numpy>=1.26.2",
+        "pandas",
+        "pysam",
+        "matplotlib",
+        "numpy",
     ],
     entry_points={
         'console_scripts': [
