@@ -11,8 +11,6 @@ EXAMPLE:
 aci -b input.bam -d amplicon.bed -o out
 '''
 
-# https://packaging.python.org/en/latest/tutorials/packaging-projects/
-
 # I tried to keep dependencies down...
 import argparse
 import concurrent.futures
@@ -30,7 +28,7 @@ from aci.utils.genome_depth         import genome_depth         # pylint: disabl
 from aci.utils.plotting_amplicons   import plotting_amplicons   # pylint: disable=E0401
 from aci.utils.plotting_depth       import plotting_depth       # pylint: disable=E0401
 from aci.utils.prep                 import prep                 # pylint: disable=E0401
-from aci.utils.subregion            import subregion            # pylint: disable=E0401
+from aci.utils.get_coverage         import get_coverage         # pylint: disable=E0401
 
 # about 30 seconds per artic V3 primer on SRR13957125
 # $ samtools coverage SRR13957125.sorted.bam
@@ -38,20 +36,22 @@ from aci.utils.subregion            import subregion            # pylint: disabl
 # MN908947.3  1        29903  1141595  29827    99.7458  5350.27   37.3      60
 # 15000 - 16500
 
-def main():
+def main(): # pylint: disable=R0914,R0915
+    """ Use pysam to get depth for amplicon region and general coverage """
+
     ##### ----- ----- ----- ----- ----- #####
     ##### Part 0. Setup                 #####
     ##### ----- ----- ----- ----- ----- #####
 
-    VERSION = '1.0.20231222'
+    version = '1.0.20231222'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--bam', nargs = '+', required = True, type = str, help = '(required) input bam file(s)') # pylint: disable=C0301
-    parser.add_argument('-d', '--bed', required = True, type = str, help ='(required) amplicon bedfile')
+    parser.add_argument('-d', '--bed', required = True, type = str, help ='(required) amplicon bedfile') # pylint: disable=C0301
     parser.add_argument('-o', '--out', required = False, type = str, help = 'directory for results', default = 'aci') # pylint: disable=C0301
     parser.add_argument('-log', '--loglevel', required = False, type = str, help = 'logging level', default = 'INFO') # pylint: disable=C0301
     parser.add_argument('-t', '--threads', required = False, type = int, help = 'specifies number of threads to use', default=4) # pylint: disable=C0301
-    parser.add_argument('-v', '--version', help='print version and exit', action = 'version', version = VERSION) # pylint: disable=C0301
+    parser.add_argument('-v', '--version', help='print version and exit', action = 'version', version = version) # pylint: disable=C0301
     args = parser.parse_args()
 
     logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -65,7 +65,7 @@ def main():
     if not os.path.exists(args.out):
         os.mkdir(args.out)
 
-    logging.info('ACI version :\t\t'     + str(VERSION))        # pylint: disable=W1201
+    logging.info('ACI version :\t\t'     + str(version))        # pylint: disable=W1201
     logging.info('Number of threads :\t' + str(args.threads))   # pylint: disable=W1201
     logging.info('Final directory :\t\t' + str(args.out))       # pylint: disable=W1201
     logging.info('Input bed file :\t\t'  + str(args.bed))       # pylint: disable=W1201
@@ -99,13 +99,6 @@ def main():
     ##### Part 1. Amplicon depths       #####
     ##### ----- ----- ----- ----- ----- #####
 
-    # setting up the dataframe
-    columns   = column_names(bed)
-    df        = pd.DataFrame(columns= ['bam'] + columns)
-    df['bam'] = filenames
-    logging.debug('Initial empty dataframe:')
-    logging.debug(df)
-
     # getting regions for parallel processing
     regions = get_regions(bed)
 
@@ -114,12 +107,26 @@ def main():
     logging.debug(list(itertools.product(args.bam, regions)))
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.threads) as executor:
         for bam, subregion in list(itertools.product(args.bam, regions)):
-            results = [executor.submit(amplicon_depth, df, meta[bam], subregion)]
+            results = [executor.submit(amplicon_depth, meta[bam], subregion)]
             # keeping the line below for testing
             # results = amplicon_depth(df, meta[bam], subregion)
 
         for f in concurrent.futures.as_completed(results):
             logging.debug(f.result())
+
+    # setting up the dataframe
+    columns   = column_names(bed)
+    df        = pd.DataFrame(columns= ['bam'] + columns)
+    df['bam'] = filenames
+    logging.debug('Initial empty dataframe:')
+    logging.debug(df)
+
+    # NOTE : Had to be done outside of concurrent
+    for bam in args.bam:
+        bamindex = df.index[df['bam'] == meta[bam]['file_name']]
+        for subregion in regions:
+            cov = get_coverage(meta[bam], subregion)
+            df.loc[bamindex, [subregion.split(':')[3]]] = cov
 
     logging.debug('The final dataframe is:')
     logging.debug(df)
@@ -135,7 +142,7 @@ def main():
 
     df_pysam = pd.DataFrame([])
 
-    # TODO : Fix this so that it's concurrent friendly
+    # TODO : Fix this so that it's concurrent friendly # pylint: disable=W0511
 
     for bam in args.bam:
         df_pysam_results = genome_depth(meta[bam])

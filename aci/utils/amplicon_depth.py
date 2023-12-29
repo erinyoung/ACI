@@ -9,7 +9,7 @@ from .subregion import subregion
 from .within import within
 from .without import without
 
-def amplicon_depth(df, meta, region):
+def amplicon_depth(meta, region):
     """ Use pysam to get depth for amplicon region """
 
     name = region.split(':')[3]
@@ -47,18 +47,9 @@ def amplicon_depth(df, meta, region):
         logging.debug('Step 3. final reduction for ' + meta['sorted_bam']) # pylint: disable=W1201
         within(meta['removing_outside_matches'], meta['final_bam'], subrange)
 
-    if os.path.exists(meta['final_bam']):
-        pysam.index(meta['final_bam'])
+        if os.path.exists(meta['final_bam']):
+            pysam.index(meta['final_bam'])
 
-        # get the coverage of the region (finally!)
-        logging.debug('Step 4. getting coverage for ' + meta['sorted_bam'] + ' over ' + subrange) # pylint: disable=C0301
-        logging.debug(pysam.coverage('--no-header', meta['final_bam'], '-r', subrange).strip())
-        cov = float(pysam.coverage('--no-header', meta['final_bam'], '-r', subrange).split()[6])
-    else:
-        cov = float(0.0)
-    logging.debug('The coverage for ' + meta['sorted_bam'] + ' over ' + subrange + ' is ' + str(cov)) # pylint: disable=W1201,C0301
+    logging.info('Amplicon bam file created for ' + meta['file_name'] + ' over ' + subrange) # pylint: disable=W1201
 
-    bamindex = df.index[df['bam'] == meta['file_name']]
-    df.loc[bamindex, [region.split(':')[3]]] = cov
-
-    return [meta['file_name'], meta['initial_bam'], name, cov]
+    return [meta['file_name'], meta['initial_bam'], name]
