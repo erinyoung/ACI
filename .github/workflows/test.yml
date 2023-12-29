@@ -13,16 +13,19 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install dependencies
-        run: pip install pandas matplotlib pysam
+        run: pip install .
         
       - name: Run ACI
-        run: ./aci/aci.py -b test/data/test.bam -d test/data/test.bed -o testing
+        run: aci -b tests/data/test.bam -d tests/data/test.bed -o testing
 
       - name: Run ACI version
-        run: ./aci/aci.py -v
+        run: aci -v
       
       - name: Run ACI help
-        run: ./aci/aci.py -h
+        run: aci.py -h
 
       - name : Final tree
         run: tree .
+
+      - name : Check final files
+        run: ls testing/{amplicon_depth.csv,amplicon_depth.png,overall_depth.csv,overall_depth.png}
