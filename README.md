@@ -1,10 +1,19 @@
-# Amplicon Coverage Inspector (ACI)
+# Amplicon Coverage Inspector (aci)
 
-Amplicon Coverage Inspector (ACI) is a bioinformatics tool designed to analyze the depth of amplicons using samtools. It provides a convenient way to determine the coverage and depth of specified regions in a BAM file based on a BED file.
+Amplicon Coverage Inspector (aci) is a bioinformatics tool designed to analyze the depth of amplicons using samtools. It provides a convenient way to determine the coverage and depth of specified regions in a BAM file based on a BED file.
 
 ## Installation
+
+```
+pip install amplicon_coverage_inspector
+```
+
+
+### From github
 ```
 git clone https://github.com/erinyoung/ACI.git
+cd ACI
+pip install .
 ```
 
 ## Dependencies
@@ -13,21 +22,22 @@ git clone https://github.com/erinyoung/ACI.git
   - matplotlib
   - pysam
 
-```
-pip install pandas matplotlib pysam
-```
-
 ## Usage
 ```
 aci --bam input.bam --bed amplicon.bed --out out
 ```
 
-Final files are out/amplicon_depth.csv and out/amplicon_depth.png
+Final files are 
+- out/amplicon_depth.csv : csv file of the depth of each amplicon
+- out/amplicon_depth.png : boxplot of information from csv file
+- out/overall_depth.csv  : csv file of overall depth of bam file
+- out/overall_depth.png  : boxplot of information from csv file
 
 Expected run time:
 About 30 seconds per amplicon when using SRR13957125 (SARS-CoV-2 with ~30 KB genome size and 5,350.27 mean depth) and the artic V3 primers. Larger genomes, more coverage, and larger amplicons increase the computation time. Use -t or --threads to take advantage of determining the coverage of amplicons in parallel.
 
-![alt text](assets/aci.png)
+
+<img src="https://github.com/erinyoung/ACI/blob/b0b2800bb8c738c964db4e9c084ea4164f5b2826/assets/aci.png" width="500"/>
 
 There are not currently options to change the look of the final image file. Instead, the amplicon_depth.csv file contains all the values in a '.csv' format that can be read into R, python, excel, or another tool for visualization.
 
@@ -40,7 +50,6 @@ options:
   -b BAM [BAM ...], --bam BAM [BAM ...]
                         (required) input bam file
   -d BED, --bed BED     (required) amplicon bedfile
-  -s, --single          flag that specifies that reads are single-end in bam file
   -o OUT, --out OUT     directory for results
   -t THREADS, --threads THREADS
                         specifies number of threads to use
@@ -90,14 +99,14 @@ Baits need to allow for portions of sequence outside of the region of interest. 
 
 ## Testing
 
-This repository contains a test bam and bed file in the [/test](./test) subdirectory.
+This repository contains a test bam and bed file in the [/tests/data](./tests/data) subdirectory.
 
 ```
-aci -b test/test.bam -d test/test.bed -o testing
+aci -b tests/data/test.bam -d tests/data/test.bed -o testing
 ```
 
 The resulting image should look something like the following.
-![alt text](assets/amplicon_depth.png)
+<img src="https://github.com/erinyoung/ACI/blob/b0b2800bb8c738c964db4e9c084ea4164f5b2826/assets/amplicon_depth.png" width="500"/>
 
 
 ## Contributing

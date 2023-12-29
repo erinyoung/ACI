@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name='aci',
+    name='amplicon_coverage_inspector',
     version='1.0.20231222',
     author='Erin Young',
     author_email='eriny@utah.gov',
