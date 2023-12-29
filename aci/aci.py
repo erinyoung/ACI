@@ -43,7 +43,7 @@ def main(): # pylint: disable=R0914,R0915
     ##### Part 0. Setup                 #####
     ##### ----- ----- ----- ----- ----- #####
 
-    version = '1.0.20231222'
+    version = '1.0.20231229'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--bam', nargs = '+', required = True, type = str, help = '(required) input bam file(s)') # pylint: disable=C0301
