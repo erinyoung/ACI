@@ -13,9 +13,9 @@ import pysam
 def within(initial_bam, final_bam, subregion):
     """ reduces reads to those within subregion """
 
-    logging.debug('initial bam is ' + initial_bam) # pylint: disable=W1201
-    logging.debug('final bam is ' + final_bam) # pylint: disable=W1201
-    logging.debug('region is ' + subregion) # pylint: disable=W1201
+    logging.debug(f"Initial bam is {initial_bam}") # pylint: disable=W1203
+    logging.debug(f"Final bam is {final_bam}") # pylint: disable=W1203
+    logging.debug(f"Region is {subregion}" ) # pylint: disable=W1203
 
     if os.path.exists(initial_bam):
         single_check = int(pysam.view('-c', '-f',  '1', initial_bam))

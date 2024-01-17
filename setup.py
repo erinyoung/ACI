@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='amplicon_coverage_inspector',
-    version='1.2.20231229',
+    version='1.4.20240116',
     author='Erin Young',
     author_email='eriny@utah.gov',
     url="https://github.com/erinyoung/ACI",
