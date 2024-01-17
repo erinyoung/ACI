@@ -39,7 +39,7 @@ def main():
     ##### Part 0. Setup                 #####
     ##### ----- ----- ----- ----- ----- #####
 
-    version = '1.0.20240116'
+    version = '1.4.20240116'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--bam',
