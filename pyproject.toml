@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "amplicon_coverage_inspector"
+version = "1.15.250702"
+description = "Visualization of coverage for amplicon sequencing"
+readme = "README.md"
+requires-python = ">=3.8,<4"
+license = {text = "MIT"}
+authors = [
+  {name = "Erin Young", email = "eriny@utah.gov"}
+]
+keywords = ["bioinformatics", "amplicon", "coverage", "visualization"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Bio-Informatics"
+]
+dependencies = [
+  "pandas",
+  "pysam",
+  "matplotlib",
+  "numpy",
+  "intervaltree"
+]
+
+[project.scripts]
+aci = "aci.aci:main"
+
+[project.urls]
+Source = 'https://github.com/erinyoung/ACI'
+
+[tool.setuptools.packages.find]
+include = ["aci", "aci.*"]
