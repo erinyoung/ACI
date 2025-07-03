@@ -1,8 +1,9 @@
 import os
+import logging
 import pysam
 import pandas as pd
-import logging
 
+# pylint: disable=duplicate-code
 
 def get_unpaired_read_positions(bam_file_path, bed_trees):
     bam = pysam.AlignmentFile(bam_file_path, "rb")

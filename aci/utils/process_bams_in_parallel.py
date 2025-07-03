@@ -1,5 +1,4 @@
 import concurrent.futures
-import pandas as pd
 import logging
 
 from .read_and_assign import read_and_assign
