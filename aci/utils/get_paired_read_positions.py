@@ -3,57 +3,66 @@ import logging
 import pysam
 import pandas as pd
 
-# pylint: disable=duplicate-code
 
-def get_paired_read_positions(bam_file_path, bed_trees):
-    bam = pysam.AlignmentFile(bam_file_path, "rb")
-
+def get_paired_read_positions(bam_path, bed_trees):
+    bam_name = os.path.basename(bam_path)
     assignments = []
 
-    # Iterate through BAM assuming it's sorted by read name
-    prev_read = None
+    r1_rows = []
+    r2_rows = []
 
-    for read in bam.fetch(until_eof=True):
-        # Skip improper, secondary, or supplementary reads
-        if not read.is_proper_pair or read.is_secondary or read.is_supplementary:
-            continue
+    with pysam.AlignmentFile(bam_path, "rb") as bamfile:
+        for read in bamfile.fetch(until_eof=True):
+            if read.is_unmapped:
+                continue
 
-        if prev_read is None:
-            prev_read = read
-            continue
+            row = {
+                "read_name": read.query_name,
+                "chrom": read.reference_name,
+                "start": read.reference_start,
+                "end": read.reference_end,
+            }
 
-        # If current and previous reads are from the same pair
-        if read.query_name == prev_read.query_name:
-            # Assign properly based on read1/read2 flag
             if read.is_read1:
-                read1, read2 = read, prev_read
-            else:
-                read1, read2 = prev_read, read
+                r1_rows.append(row)
+            elif read.is_read2:
+                r2_rows.append(row)
 
-            chrom = read.reference_name
-            start = min(read1.reference_start, read2.reference_start)
-            end = max(read1.reference_end, read2.reference_end)
+    # Convert to DataFrames
+    r1_df = pd.DataFrame(r1_rows).rename(
+        columns={"chrom": "chrom_R1", "start": "read_start_R1", "end": "read_end_R1"}
+    )
+    r2_df = pd.DataFrame(r2_rows).rename(
+        columns={"chrom": "chrom_R2", "start": "read_start_R2", "end": "read_end_R2"}
+    )
 
-            if chrom in bed_trees:
-                overlapping = bed_trees[chrom].overlap(start, end)
-                for interval in overlapping:
-                    read_info = {
-                        "read_name": read.query_name,
-                        "chrom": chrom,
-                        "read_start": start,
-                        "read_end": end,
+    # Merge paired reads
+    merged_df = pd.merge(r1_df, r2_df, on="read_name")
+    merged_df = merged_df[merged_df["chrom_R1"] == merged_df["chrom_R2"]]
+    merged_df["chrom"] = merged_df["chrom_R1"]
+    merged_df["start"] = merged_df[
+        ["read_start_R1", "read_start_R2", "read_end_R1", "read_end_R2"]
+    ].min(axis=1)
+    merged_df["end"] = merged_df[
+        ["read_start_R1", "read_start_R2", "read_end_R1", "read_end_R2"]
+    ].max(axis=1)
+
+    # Find overlapping intervals
+    for _, row in merged_df.iterrows():
+
+        if row["chrom"] in bed_trees:
+            for interval in bed_trees[row["chrom"]][row["start"] : row["end"]]:
+                assignments.append(
+                    {
+                        "read_name": row["read_name"],
+                        "chrom": row["chrom"],
+                        "read_start": row["start"],
+                        "read_end": row["end"],
                         "amplicon": interval.data,
-                        "bam": os.path.basename(bam_file_path),
+                        "bam": bam_name,
                     }
-                    assignments.append(read_info)
+                )
 
-            logging.debug(f"reads : {read_info}")
-            # Reset for next pair
-            prev_read = None
+    logging.debug(f"assignements: {assignments}")
 
-        else:
-            # If names don't match, assume the previous read is unpaired
-            prev_read = read
-
-    bam.close()
     return pd.DataFrame(assignments)
