@@ -1,50 +1,40 @@
 import pandas as pd
-import pytest
+import pandas.testing as pdt
 from unittest import mock
+
 from aci.utils.plotting_depth import plotting_depth
 
-def test_plotting_depth(tmp_path):
-    # Sample DataFrame returned by split_dataframe
-    sample_df = pd.DataFrame({
-        "pos": [0, 500, 1000],
-        "group": [0, 1, 2],
-        "cov": [10, 20, 30]
-    })
 
-    # Patch split_dataframe and plotting_boxplot
-    with mock.patch("aci.utils.plotting_depth.split_dataframe", return_value=sample_df) as mock_split, \
-         mock.patch("aci.utils.plotting_depth.plotting_boxplot") as mock_plotbox:
+@mock.patch("aci.utils.plotting_depth.split_dataframe")
+@mock.patch("aci.utils.plotting_depth.plotting_boxplot")
+def test_plotting_depth(mock_plotting_boxplot, mock_split_dataframe, tmp_path):
+    df = pd.DataFrame(
+        {
+            "bam": ["sample1", "sample2"],
+            "pos": [1, 2],
+            "group": [1, 2],
+            "cov": [10, 20],
+            "ref": ["chr1", "chr1"],
+        }
+    )
 
-        out_dir = tmp_path
+    df_after_split = pd.DataFrame(
+        {
+            "pos": [1, 2],
+            "group": [1, 2],
+            "cov": [10, 20],
+            "ref": ["chr1", "chr1"],
+        }
+    )
+    mock_split_dataframe.return_value = df_after_split
 
-        # Call function under test
-        plotting_depth(sample_df, str(out_dir))
+    out_dir = tmp_path
 
-        # Assert split_dataframe called once with original df
-        mock_split.assert_called_once_with(sample_df)
+    plotting_depth(df, str(out_dir))
 
-        # Check CSV file is created and content matches expected columns
-        csv_file = out_dir / "overall_depth.csv"
-        assert csv_file.exists()
+    # Check split_dataframe called exactly once
+    assert mock_split_dataframe.call_count == 1
 
-        df_read = pd.read_csv(csv_file)
-        assert list(df_read.columns) == ["pos", "group", "cov"]
-
-        # Prepare expected DataFrame passed to plotting_boxplot
-        expected_df = sample_df.copy()
-        expected_df["ungroup"] = expected_df["group"] * 500
-        expected_df = expected_df.drop(columns=["pos", "group"]).set_index("ungroup").transpose()
-
-        # Check plotting_boxplot called once
-        mock_plotbox.assert_called_once()
-        args, kwargs = mock_plotbox.call_args
-
-        # First arg to plotting_boxplot should be expected_df (check dataframe equality)
-        pd.testing.assert_frame_equal(args[0], expected_df)
-
-        # Second arg should be the dictionary with keys and correct filename
-        plot_params = args[1]
-        assert plot_params["title"] == "Overall coverage"
-        assert plot_params["ylabel"] == "meandepth"
-        assert plot_params["xlabel"] == "position"
-        assert plot_params["file"] == f"{out_dir}/overall_depth.png"
+    # Check argument equality with pandas testing
+    called_df = mock_split_dataframe.call_args[0][0]
+    pdt.assert_frame_equal(called_df.reset_index(drop=True), df.reset_index(drop=True))

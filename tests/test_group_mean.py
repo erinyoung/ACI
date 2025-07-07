@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from aci.utils.group_mean import group_mean
 
+
 def test_group_mean():
     # Create sample data mimicking your input DataFrame structure
     data = {

@@ -1,6 +1,7 @@
 import os
 from unittest import mock
-from aci.utils.prep import prep 
+from aci.utils.prep import prep
+
 
 def test_prep_calls_sort_and_index():
     initial = "tests/data/test.bam"
@@ -8,9 +9,9 @@ def test_prep_calls_sort_and_index():
     threads = 4
 
     # Patch os.path.exists to simulate files existing
-    with mock.patch("os.path.exists") as mock_exists, \
-         mock.patch("pysam.sort") as mock_sort, \
-         mock.patch("pysam.index") as mock_index:
+    with mock.patch("os.path.exists") as mock_exists, mock.patch(
+        "pysam.sort"
+    ) as mock_sort, mock.patch("pysam.index") as mock_index:
 
         # Simulate that initial and final BAM files exist
         def exists_side_effect(path):
@@ -31,14 +32,15 @@ def test_prep_calls_sort_and_index():
         # Assert pysam.index was called on final bam
         mock_index.assert_called_once_with(final)
 
+
 def test_prep_skips_sort_if_initial_missing():
     initial = "nonexistent.bam"
     final = "tests/data/test_sorted.bam"
     threads = 4
 
-    with mock.patch("os.path.exists") as mock_exists, \
-         mock.patch("pysam.sort") as mock_sort, \
-         mock.patch("pysam.index") as mock_index:
+    with mock.patch("os.path.exists") as mock_exists, mock.patch(
+        "pysam.sort"
+    ) as mock_sort, mock.patch("pysam.index") as mock_index:
 
         # Simulate initial file does not exist but final does
         def exists_side_effect(path):

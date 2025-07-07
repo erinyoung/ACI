@@ -4,22 +4,21 @@ from unittest import mock
 import matplotlib.pyplot as plt
 from aci.utils.plotting_boxplot import plotting_boxplot
 
+
 def test_plotting_boxplot():
     # Create sample dataframe with numeric columns
-    df = pd.DataFrame({
-        "amp1": [1, 2, 3, 4, 5],
-        "amp2": [5, 6, 7, 8, 9]
-    })
+    df = pd.DataFrame({"amp1": [1, 2, 3, 4, 5], "amp2": [5, 6, 7, 8, 9]})
 
     plot_params = {
         "title": "Test Title",
         "ylabel": "Y Label",
         "xlabel": "X Label",
-        "file": "test_plot.png"
+        "file": "test_plot.png",
     }
 
-    with mock.patch.object(plt.Figure, 'savefig') as mock_savefig, \
-         mock.patch('matplotlib.pyplot.close') as mock_close:
+    with mock.patch.object(plt.Figure, "savefig") as mock_savefig, mock.patch(
+        "matplotlib.pyplot.close"
+    ) as mock_close:
 
         plotting_boxplot(df, plot_params)
 

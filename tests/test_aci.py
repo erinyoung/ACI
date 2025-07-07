@@ -15,7 +15,9 @@ def run_command(cmd):
 
 def test_aci():
     """test aci"""
-    cmd = "python -m aci.aci -b tests/data/test.bam -d tests/data/test.bed -o tests -t 1"
+    cmd = (
+        "python -m aci.aci -b tests/data/test.bam -d tests/data/test.bed -o tests -t 1"
+    )
     run_command(cmd)
 
 

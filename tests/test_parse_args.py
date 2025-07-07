@@ -9,21 +9,29 @@ def test_required_args():
     args = parser.parse_args(["-b", "file1.bam", "-d", "amplicons.bed"])
     assert args.bam == ["file1.bam"]
     assert args.bed == "amplicons.bed"
-    assert args.out == "aci"        # default
+    assert args.out == "aci"  # default
     assert args.loglevel == "INFO"  # default
-    assert args.threads == 4        # default
+    assert args.threads == 4  # default
 
 
 def test_all_args():
     version = "1.2.3"
     parser = get_parser(version)
-    args = parser.parse_args([
-        "-b", "file1.bam", "file2.bam",
-        "-d", "amplicons.bed",
-        "-o", "results_dir",
-        "-log", "DEBUG",
-        "-t", "8"
-    ])
+    args = parser.parse_args(
+        [
+            "-b",
+            "file1.bam",
+            "file2.bam",
+            "-d",
+            "amplicons.bed",
+            "-o",
+            "results_dir",
+            "-log",
+            "DEBUG",
+            "-t",
+            "8",
+        ]
+    )
     assert args.bam == ["file1.bam", "file2.bam"]
     assert args.bed == "amplicons.bed"
     assert args.out == "results_dir"

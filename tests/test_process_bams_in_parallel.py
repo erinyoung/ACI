@@ -6,6 +6,7 @@ import pandas as pd
 
 from aci.utils.process_bams_in_parallel import process_bams_in_parallel
 
+
 def test_process_bams_in_parallel():
     bam_files = ["bam1.bam", "bam2.bam"]
     bed_intervals = {"chr1": "fake_interval_tree"}
@@ -14,8 +15,11 @@ def test_process_bams_in_parallel():
     df1 = pd.DataFrame({"a": [1, 2]})
     df2 = pd.DataFrame({"a": [3, 4]})
 
-    with mock.patch("aci.utils.process_bams_in_parallel.read_and_assign") as mock_read_assign, \
-         mock.patch("concurrent.futures.ProcessPoolExecutor", new=ThreadPoolExecutor):
+    with mock.patch(
+        "aci.utils.process_bams_in_parallel.read_and_assign"
+    ) as mock_read_assign, mock.patch(
+        "concurrent.futures.ProcessPoolExecutor", new=ThreadPoolExecutor
+    ):
 
         mock_read_assign.side_effect = [df1, df2]
 
@@ -28,4 +32,3 @@ def test_process_bams_in_parallel():
         assert len(results) == 2
         assert any(df1.equals(df) for df in results)
         assert any(df2.equals(df) for df in results)
-

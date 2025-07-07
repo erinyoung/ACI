@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from unittest import mock
 from types import SimpleNamespace
-from aci.utils.group_create import group_create 
+from aci.utils.group_create import group_create
 
 
 def test_group_create():

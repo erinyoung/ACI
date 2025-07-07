@@ -3,6 +3,7 @@ from unittest import mock
 from intervaltree import IntervalTree
 from aci.utils.load_bed_intervals import load_bed_intervals
 
+
 def test_load_bed_intervals_success(tmp_path):
     # Create a temporary BED file with valid lines
     bed_content = """chr1\t100\t200\tamp1
