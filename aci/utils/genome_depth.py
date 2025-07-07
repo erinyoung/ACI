@@ -6,6 +6,7 @@ import logging
 import pandas as pd
 import pysam
 
+
 def genome_depth(meta):
     """Takes a bam file file and gets coverage"""
 
