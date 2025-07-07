@@ -7,6 +7,7 @@ from .read_and_assign import read_and_assign
 def process_bams_in_parallel(bam_files, bed_intervals, temp_dir):
     logging.info("Reading bams and assigning intervals")
     results = []
+
     with concurrent.futures.ProcessPoolExecutor() as executor:
 
         futures = [
