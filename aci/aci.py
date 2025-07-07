@@ -66,6 +66,7 @@ def main():
     with tempfile.TemporaryDirectory(dir=args.out) as temp_dir:
         meta = {}
         filenames = []
+        sorted_bams = []
         for bam in args.bam:
             meta[bam] = {}
             meta[bam]["initial_bam"] = bam
@@ -78,7 +79,10 @@ def main():
             filenames.append(meta[bam]["file_name"])
 
             logging.info(f"Sorting and indexing {meta[bam]['file_name']}")
-            prep(meta[bam]["initial_bam"], meta[bam]["sorted_bam"], args.threads)
+            sorted_bam = prep(
+                meta[bam]["initial_bam"], meta[bam]["sorted_bam"], args.threads
+            )
+            sorted_bams.append(sorted_bam)
         logging.info("Finished sorting and indexing")
         meta["filenames"] = filenames
 
@@ -89,7 +93,7 @@ def main():
         ##### Part 1. Amplicon depths       #####
         ##### ----- ----- ----- ----- ----- #####
 
-        max_df, min_df = amplicon_splitting(meta, args)
+        max_df, min_df = amplicon_splitting(sorted_bams, args, meta["tmp"])
 
         plotting_amplicons(max_df, min_df, args.out)
 
