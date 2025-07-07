@@ -8,14 +8,12 @@ from .process_bams_in_parallel import process_bams_in_parallel
 from .get_amplicon_counts import get_amplicon_counts
 
 
-def amplicon_splitting(meta, args):
+def amplicon_splitting(bams, args, temp_dir):
     """Split processes by region in bedfile for concurrent"""
 
     bed_trees, amplicon_names = load_bed_intervals(args.bed)
-    print(bed_trees)
-    print(amplicon_names)
 
-    interval_files = process_bams_in_parallel(args.bam, bed_trees, meta["tmp"])
+    interval_files = process_bams_in_parallel(bams, bed_trees, temp_dir)
     max_df, min_df = get_amplicon_counts(interval_files, amplicon_names)
 
     return max_df, min_df
