@@ -3,6 +3,7 @@ import sys
 
 from intervaltree import IntervalTree
 
+
 def load_bed_intervals(bed_path):
     """getting intervals from bedfile"""
 
