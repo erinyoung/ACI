@@ -55,7 +55,7 @@ def plotting_amplicons(df, min_df, out):
         ax.set_xticklabels(x, rotation=90)
 
         ax.set_title(f"Primer Assessment - {bam_name}")
-        ax.set_xlabel("Amplicon Name")
+        ax.set_xlabel("Amplicon Name", fontsize=2)
         ax.set_ylabel("Depth")
         ax.legend()
         plt.tight_layout()
