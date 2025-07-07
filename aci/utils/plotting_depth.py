@@ -9,28 +9,32 @@ from .plotting_boxplot import plotting_boxplot
 
 
 def plotting_depth(df, out):
-    """Getting coverage ready for plotting"""
+    """Generate depth plots for each references (ref)"""
 
-    df = split_dataframe(df)
-
-    # writing results to a file
+    df["ref"] = df["ref"].astype(str)
     df.to_csv(f"{out}/overall_depth.csv", index=False)
+    references = df["ref"].unique()
 
-    # restructuring for boxplot
-    df["ungroup"] = df["group"] * 500
-    df = df.drop("pos", axis=1)
-    df = df.drop("group", axis=1)
-    df = df.set_index("ungroup")
-    df = df.transpose()
+    for ref in references:
+        ref_df = df[df["ref"] == ref].copy()
 
-    logging.debug("Restructured coverage boxplot")
-    logging.debug(df)
+        split_df = split_dataframe(ref_df)
 
-    d = {
-        "title": "Overall coverage",
-        "ylabel": "meandepth",
-        "xlabel": "position",
-        "file": f"{out}/overall_depth.png",
-    }
+        # Prepare for boxplot
+        split_df["ungroup"] = split_df["group"] * 500
+        split_df = split_df.drop(columns=["pos", "group"])
+        split_df = split_df.set_index("ungroup")
+        split_df = split_df.transpose()
 
-    plotting_boxplot(df, d)
+        logging.debug(f"Restructured coverage for {ref}")
+        logging.debug(split_df)
+
+        # Plot
+        plot_config = {
+            "title": f"Coverage - {ref}",
+            "ylabel": "Mean depth",
+            "xlabel": "Genomic position",
+            "file": f"{out}/{ref}_depth.png",
+        }
+
+        plotting_boxplot(split_df, plot_config)
