@@ -14,3 +14,5 @@ def prep(initial, final, threads):
 
     if os.path.exists(final):
         pysam.index(final)
+
+    return final
