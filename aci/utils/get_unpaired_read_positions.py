@@ -5,6 +5,7 @@ import pandas as pd
 
 # pylint: disable=duplicate-code
 
+
 def get_unpaired_read_positions(bam_file_path, bed_trees):
     bam = pysam.AlignmentFile(bam_file_path, "rb")
 
@@ -35,4 +36,6 @@ def get_unpaired_read_positions(bam_file_path, bed_trees):
                 logging.debug(f"reads : {read_info}")
 
     bam.close()
+    logging.debug(f"assignements: {assignments}")
+
     return pd.DataFrame(assignments)
