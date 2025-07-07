@@ -1,6 +1,5 @@
 import logging
 import os
-import pandas as pd
 
 from .is_paired import is_paired_bam
 from .get_paired_read_positions import get_paired_read_positions
@@ -12,8 +11,6 @@ def read_and_assign(bam_path, bed_trees, temp_dir):
     paired = is_paired_bam(bam_path)
     filename = os.path.basename(bam_path)
     assigned_file = f"{temp_dir}/assigned_reads_{filename}.csv"
-
-    df = pd.DataFrame()
 
     if paired:
         logging.debug(f"{filename} is paired")
