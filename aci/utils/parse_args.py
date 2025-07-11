@@ -24,7 +24,16 @@ def get_parser(version):
         help="(required) input bam file(s)",
     )
     parser.add_argument(
-        "-d", "--bed", required=True, type=str, help="(required) amplicon bedfile"
+        "-d", "--bed", 
+        required=True, 
+        type=str, 
+        help="(required) amplicon bedfile"
+    )
+    parser.add_argument(
+        "-s", "--batch-size",
+        default=10000,
+        help = "number of reads in bam file to process at once",
+        type=int
     )
     parser.add_argument(
         "-o",

@@ -4,15 +4,17 @@ import pysam
 import pandas as pd
 
 
-def get_paired_read_positions(bam_path, bed_trees):
+def get_paired_read_positions(bam_path, bed_trees, region):
     bam_name = os.path.basename(bam_path)
+    fetch_region = region.split(":")
+
     assignments = []
 
     r1_rows = []
     r2_rows = []
 
     with pysam.AlignmentFile(bam_path, "rb") as bamfile:
-        for read in bamfile.fetch(until_eof=True):
+        for read in bamfile.fetch(fetch_region[0], int(fetch_region[1]), int(fetch_region[2])):
             if read.is_unmapped:
                 continue
 
@@ -28,13 +30,20 @@ def get_paired_read_positions(bam_path, bed_trees):
             elif read.is_read2:
                 r2_rows.append(row)
 
-    # Convert to DataFrames
-    r1_df = pd.DataFrame(r1_rows).rename(
-        columns={"chrom": "chrom_R1", "start": "read_start_R1", "end": "read_end_R1"}
-    )
-    r2_df = pd.DataFrame(r2_rows).rename(
-        columns={"chrom": "chrom_R2", "start": "read_start_R2", "end": "read_end_R2"}
-    )
+    if r1_rows:
+        # Convert to DataFrames
+        r1_df = pd.DataFrame(r1_rows).rename(
+            columns={"chrom": "chrom_R1", "start": "read_start_R1", "end": "read_end_R1"}
+        )
+    else:
+        return pd.DataFrame()
+
+    if r2_rows:
+        r2_df = pd.DataFrame(r2_rows).rename(
+            columns={"chrom": "chrom_R2", "start": "read_start_R2", "end": "read_end_R2"}
+        )
+    else:
+        return pd.DataFrame()
 
     # Merge paired reads
     merged_df = pd.merge(r1_df, r2_df, on="read_name")

@@ -5,7 +5,6 @@
 import os
 import pysam
 
-
 def prep(initial, final, threads):
     """Sorts and indexes bam files listed in dic"""
 
