@@ -64,36 +64,27 @@ def main():
     logging.info(f"Input bam file(s) :\t{', '.join(args.bam)}")
 
     with tempfile.TemporaryDirectory(dir=args.out) as temp_dir:
-        meta = {}
-        filenames = []
+
+        ##### ----- ----- ----- ----- ----- #####
+        ##### Part 0. Sorting the bam file  #####
+        ##### ----- ----- ----- ----- ----- #####
+
         sorted_bams = []
         for bam in args.bam:
-            meta[bam] = {}
-            meta[bam]["initial_bam"] = bam
-            meta[bam]["out"] = args.out
-            meta["tmp"] = f"{temp_dir}/"
-            meta[bam]["tmp"] = f"{temp_dir}/"
-            meta[bam]["file_name"] = os.path.basename(bam)
-            meta[bam]["sorted_bam"] = f"{meta[bam]['tmp']}{os.path.basename(bam)}"
-            meta[bam]["sorted_bai"] = f"{meta[bam]['sorted_bam']}.bai"
-            filenames.append(meta[bam]["file_name"])
-
-            logging.info(f"Sorting and indexing {meta[bam]['file_name']}")
+            logging.info(f"Sorting and indexing {os.path.basename(bam)}")
             sorted_bam = prep(
-                meta[bam]["initial_bam"], meta[bam]["sorted_bam"], args.threads
+                bam, 
+                f"{temp_dir}/{os.path.basename(bam)}", 
+                args.threads
             )
             sorted_bams.append(sorted_bam)
-        logging.info("Finished sorting and indexing")
-        meta["filenames"] = filenames
-
-        logging.debug("the filenames for all the bam files are")
-        logging.debug(filenames)
+        logging.info(f"Finished sorting and indexing {os.path.basename(bam)}")
 
         ##### ----- ----- ----- ----- ----- #####
         ##### Part 1. Amplicon depths       #####
         ##### ----- ----- ----- ----- ----- #####
 
-        max_df, min_df = amplicon_splitting(sorted_bams, args, meta["tmp"])
+        max_df, min_df = amplicon_splitting(sorted_bams, args, temp_dir)
 
         plotting_amplicons(max_df, min_df, args.out)
 
@@ -108,8 +99,8 @@ def main():
 
         # NOTE : Attempted with concurrent and this was just as fast
 
-        for bam in args.bam:
-            df_pysam_results = genome_depth(meta[bam])
+        for bam in sorted_bams:
+            df_pysam_results = genome_depth(bam)
             df_pysam = pd.concat([df_pysam, df_pysam_results], ignore_index=True)
 
         plotting_depth(df_pysam, args.out)
