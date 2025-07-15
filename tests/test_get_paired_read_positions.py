@@ -1,6 +1,7 @@
 import os
 import pytest
 import pandas as pd
+import pysam
 from intervaltree import IntervalTree, Interval
 from aci.utils.get_paired_read_positions import get_paired_read_positions
 
@@ -26,15 +27,16 @@ def bed_trees():
 
 
 def test_get_paired_read_positions_with_real_bam(bam_path, bed_trees):
-    df = get_paired_read_positions(bam_path, bed_trees)
+    # Provide a region that matches the known reads in your BAM file
+    region = "MN908947.3:15500:15900"
+    pysam.index(bam_path)
+    df = get_paired_read_positions(bam_path, bed_trees, region)
 
-    # Basic structure checks
     assert not df.empty
-    assert all(
-        col in df.columns
-        for col in ["read_name", "chrom", "read_start", "read_end", "amplicon", "bam"]
-    )
+    assert set(df.columns) == {
+        "read_name", "chrom", "read_start", "read_end", "amplicon", "bam"
+    }
 
-    # Optional: check for known overlap
+    # Optional: ensure assigned amplicons are expected
     expected_amplicons = {"52"}
-    assert set(df["amplicon"]) <= expected_amplicons
+    assert set(df["amplicon"]).issubset(expected_amplicons)
