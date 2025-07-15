@@ -5,7 +5,7 @@ from .is_paired import is_paired_bam
 from .get_paired_read_positions import get_paired_read_positions
 from .get_unpaired_read_positions import get_unpaired_read_positions
 
-def read_and_assign(bam_path, bed_trees, region, args, temp_dir):
+def read_and_assign(bam_path, bed_trees, region, temp_dir):
     """Identify which interval each read  or read pair is in"""
     filename = os.path.basename(bam_path)
 

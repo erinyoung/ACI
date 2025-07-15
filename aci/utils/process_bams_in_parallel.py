@@ -28,7 +28,7 @@ def process_bams_in_parallel(bam_files, bed_intervals, args, temp_dir):
     # Use ProcessPoolExecutor to parallelize
     with ProcessPoolExecutor(max_workers=args.threads) as executor:
         futures = [
-            executor.submit(read_and_assign, bam, bed_intervals, region, args, temp_dir)
+            executor.submit(read_and_assign, bam, bed_intervals, region, temp_dir)
             for bam, region in tasks
         ]
         for future in as_completed(futures):
