@@ -16,7 +16,9 @@ jobs:
         uses: actions/checkout@master
 
       - name: Setup
-        run: python setup.py sdist bdist_wheel
+        run: echo "set this up!"
+
+        # python setup.py sdist bdist_wheel
 
         # uploading to test.pypi
         # python setup.py sdist bdist_wheel
