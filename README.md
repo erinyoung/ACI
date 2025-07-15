@@ -33,7 +33,7 @@ Final files are
 - out/amplicon_depth.png : boxplot of information from csv file
 - out/amplicon_depth_${sample}.bam.png : per-sample amplicon depth image with max and min
 - out/amplicon_min_depth.csv : csv file for the minimum depth/unique depth of each amplicon
-- out/amplicon_min_depth.csv : boxplot of information from csv file
+- out/amplicon_min_depth.png : boxplot of information from csv file
 - out/overall_depth.csv  : csv file of overall depth of bam file
 - out/${reference}_depth.png : overal depth accross reference from overall_depth.csv
 
