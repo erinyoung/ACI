@@ -7,10 +7,10 @@ run-name: Test ACI
 jobs:
 
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@master
 
       - name: Install dependencies
         run: pip install .
@@ -28,4 +28,4 @@ jobs:
         run: tree .
 
       - name : Check final files
-        run: ls testing/{amplicon_depth.csv,amplicon_depth.png,overall_depth.csv,overall_depth.png}
+        run: ls testing/{amplicon_depth.csv,amplicon_depth.png,amplicon_depth_*.bam.png,amplicon_min_depth.csv,amplicon_min_depth.png,overall_depth.csv,*_depth.png}
