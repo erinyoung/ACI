@@ -2,11 +2,12 @@ import pandas as pd
 import pandas.testing as pdt
 from unittest import mock
 
-from aci.utils.plotting_depth import plotting_depth
+from aci.plotting.plotting_depth import plotting_depth
 
-
-@mock.patch("aci.utils.plotting_depth.split_dataframe")
-@mock.patch("aci.utils.plotting_depth.plotting_boxplot")
+# CHANGED: aci.utils.plotting_depth -> aci.plotting.plotting_depth
+# Note: plotting_depth.py imports split_dataframe, so we patch where it is used
+@mock.patch("aci.plotting.plotting_depth.split_dataframe")
+@mock.patch("aci.plotting.plotting_depth.plotting_boxplot")
 def test_plotting_depth(mock_plotting_boxplot, mock_split_dataframe, tmp_path):
     df = pd.DataFrame(
         {

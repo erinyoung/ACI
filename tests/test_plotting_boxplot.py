@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from unittest import mock
 import matplotlib.pyplot as plt
-from aci.utils.plotting_boxplot import plotting_boxplot
+from aci.plotting.plotting_boxplot import plotting_boxplot
 
 
 def test_plotting_boxplot():

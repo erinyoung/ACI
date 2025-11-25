@@ -1,0 +1,2 @@
+Sample	Total_Reads	Mean_Depth	Gini_Coefficient	Status
+test.bam	8870	633.6	0.841	High_Inequality
