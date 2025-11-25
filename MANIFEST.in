@@ -1,0 +1,18 @@
+include README.md
+include LICENSE
+include pyproject.toml
+
+# Include the tests folder and all data inside it (BAMs, BEDs)
+# This is crucial so others can run your tests
+recursive-include tests *
+
+# Include the assets folder (images used in README)
+recursive-include assets *
+
+# Exclude junk that shouldn't be in the final package
+exclude .gitignore
+exclude .gitpod.yml
+exclude .pylintrc
+recursive-exclude .github *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]

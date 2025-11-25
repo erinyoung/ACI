@@ -4,20 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "amplicon_coverage_inspector"
-version = "1.15.250702"
+version = "1.45.251125"
 description = "Visualization of coverage for amplicon sequencing"
 readme = "README.md"
-requires-python = ">=3.8,<4"
+requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
   {name = "Erin Young", email = "eriny@utah.gov"}
 ]
-keywords = ["bioinformatics", "amplicon", "coverage", "visualization"]
+keywords = ["bioinformatics", "amplicon", "coverage", "visualization", "pysam"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
-  "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
   "Topic :: Scientific/Engineering :: Bio-Informatics"
 ]
@@ -30,10 +29,13 @@ dependencies = [
 ]
 
 [project.scripts]
-aci = "aci.aci:main"
+# We moved the main file to cli.py, so we must update this entry point
+aci = "aci.cli:main"
 
 [project.urls]
 Source = 'https://github.com/erinyoung/ACI'
 
+# --- THE FIX IS HERE ---
 [tool.setuptools.packages.find]
+where = ["src"]  # <--- This tells pip: "The code is now inside the src folder!"
 include = ["aci", "aci.*"]

@@ -1,19 +1,15 @@
 import pytest
 import pandas as pd
 from unittest import mock
-
-from aci.utils.genome_depth import genome_depth
-
+from aci.logic.genome_depth import genome_depth
 
 def test_genome_depth():
-
     mock_depth_output = "chr1\t1\t10\n" "chr1\t2\t15\n" "chr1\t3\t20\n"
 
-    # Patch pysam.depth at the module where genome_depth is defined
+    # CHANGED: aci.utils -> aci.logic
     with mock.patch(
-        "aci.utils.genome_depth.pysam.depth", return_value=mock_depth_output
+        "aci.logic.genome_depth.pysam.depth", return_value=mock_depth_output
     ):
-
         df = genome_depth("tests/data/test.bam")
         print(df)
 

@@ -1,17 +1,16 @@
 import pytest
 from unittest import mock
-from aci.utils.get_coverage import get_coverage  # adjust import path
-
+from aci.logic.get_coverage import get_coverage
 
 def test_get_coverage_file_exists_and_not_exists():
     bam_path = "fake.bam"
     subrange = "chr1:100-200"
 
-    # Mock for os.path.exists to simulate BAM file presence
+    # CHANGED: aci.utils -> aci.logic (for both patches)
     with mock.patch(
-        "aci.utils.get_coverage.os.path.exists", return_value=True
+        "aci.logic.get_coverage.os.path.exists", return_value=True
     ), mock.patch(
-        "aci.utils.get_coverage.pysam.coverage",
+        "aci.logic.get_coverage.pysam.coverage",
         return_value="some output 0 0 0 0 30.5 rest",
     ) as mock_coverage:
 
@@ -23,7 +22,7 @@ def test_get_coverage_file_exists_and_not_exists():
         # The 7th element (index 6) is 30.5 in the mocked output -> float conversion
         assert cov == 30.5
 
-    # Test when file does not exist, coverage should be 0.0
-    with mock.patch("aci.utils.get_coverage.os.path.exists", return_value=False):
+    # CHANGED: aci.utils -> aci.logic
+    with mock.patch("aci.logic.get_coverage.os.path.exists", return_value=False):
         cov = get_coverage(bam_path, subrange)
         assert cov == 0.0

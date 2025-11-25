@@ -27,3 +27,6 @@ amplicon_depth.csv
 amplicon_depth.png
 overall_depth.csv
 overall_depth.png
+
+@eaDir/
+.DS_Store
