@@ -151,6 +151,10 @@ ACI was developed to provide a flexible, standalone alternative that strictly ev
 ## Contributing
 Contributions are welcome! Please feel free to [open an issue](https://github.com/erinyoung/ACI/issues) or submit a pull request.
 
+## Future Directions
+- Support for single reads
+- Support for baits
+
 ## License
 This project is licensed under the MIT License.
 
