@@ -1,4 +1,7 @@
-# Amplicon Coverage Inspector (ACI)
+<div align="center">
+  <img src="assets/logo.png" width="200" alt="ACI Logo">
+  <h1>Amplicon Coverage Inspector (ACI)</h1>
+</div>
 
 ![PyPI - Version](https://img.shields.io/pypi/v/amplicon_coverage_inspector)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/amplicon_coverage_inspector)
